@@ -1,4 +1,3 @@
-
 import React, { useState, ReactNode } from 'react';
 import { UserRole } from './types';
 import Sidebar from './components/Sidebar';
@@ -17,6 +16,8 @@ import GoalsScreen from './components/GoalsScreen';
 import StatementScreen from './components/StatementScreen';
 import DocumentsScreen from './components/DocumentsScreen';
 import HelpCenterScreen from './components/HelpCenterScreen';
+import SettingsScreen from './components/SettingsScreen';
+import LoginScreen from './components/LoginScreen';
 
 const screens: Record<string, ReactNode> = {
     // Admin
@@ -38,6 +39,9 @@ const screens: Record<string, ReactNode> = {
     statement: <StatementScreen />,
     documents: <DocumentsScreen />,
     help: <HelpCenterScreen />,
+
+    // General
+    settings: <SettingsScreen />,
 };
 
 const getDefaultScreen = (role: UserRole): string => {
@@ -50,6 +54,7 @@ const getDefaultScreen = (role: UserRole): string => {
 }
 
 const App: React.FC = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userRole, setUserRole] = useState<UserRole>(UserRole.Admin);
     const [activeScreen, setActiveScreen] = useState<string>(getDefaultScreen(userRole));
 
@@ -57,6 +62,14 @@ const App: React.FC = () => {
         setUserRole(newRole);
         setActiveScreen(getDefaultScreen(newRole));
     };
+
+    const handleLogin = () => {
+        setIsLoggedIn(true);
+    };
+
+    if (!isLoggedIn) {
+        return <LoginScreen onLogin={handleLogin} />;
+    }
 
     return (
         <>

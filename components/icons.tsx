@@ -31,7 +31,9 @@ import {
   Edit2,
   Trash2,
   Download,
-  Phone
+  Phone,
+  Mail,
+  Lock,
 } from 'lucide-react';
 
 export const LogoIcon = () => (
@@ -88,6 +90,8 @@ export const CheckCircleIcon = () => <CheckCircle className="w-5 h-5 text-green-
 export const XCircleIcon = () => <XCircle className="w-5 h-5 text-red-500" />;
 export const DownloadIcon = () => <Download className="w-5 h-5" />;
 export const PhoneIcon = () => <Phone className="w-4 h-4 mr-2" />;
+export const MailIcon = () => <Mail className="w-4 h-4 text-slate-400" />;
+export const LockIcon = () => <Lock className="w-4 h-4 text-slate-400" />;
 
 
 // KPI Icons (Larger)

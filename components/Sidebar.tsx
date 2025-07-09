@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavItem, UserRole } from '../types';
 import {
@@ -82,7 +81,18 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole, activeScreen, setActiveScre
       </nav>
 
       <div className="px-4 py-4 border-t border-slate-200">
-        <a href="#" className="flex items-center w-full px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            setActiveScreen('settings');
+          }}
+          className={`flex items-center w-full px-4 py-2.5 rounded-lg font-semibold transition-colors ${
+            activeScreen === 'settings'
+              ? 'bg-orange-600 text-white'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
           <SettingsIcon />
           Configurações
         </a>
