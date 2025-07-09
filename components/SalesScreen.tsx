@@ -1,15 +1,8 @@
-
-import React, { useState } from 'react';
-import { Sale, SaleStatus } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Sale, SaleStatus, User, UserRole, Representative } from '../types';
 import { PlusCircleIcon, MoreHorizontalIcon } from './icons';
 import NewSaleModal from './NewSaleModal';
-
-const initialSales: Sale[] = [
-  { id: 1, clientName: 'João Silva', plan: 'Consórcio de Automóvel', value: 50000, date: '09/07/2025', status: SaleStatus.Approved },
-  { id: 2, clientName: 'Carlos Pereira', plan: 'Consórcio de Imóvel', value: 350000, date: '05/07/2025', status: SaleStatus.Pending },
-  { id: 3, clientName: 'Beatriz Lima', plan: 'Consórcio de Serviços', value: 15000, date: '02/07/2025', status: SaleStatus.Rejected },
-  { id: 4, clientName: 'Ricardo Alves', plan: 'Consórcio de Automóvel', value: 80000, date: '28/06/2025', status: SaleStatus.Approved },
-];
+import * as db from '../services/database';
 
 const statusColors: Record<SaleStatus, string> = {
   [SaleStatus.Approved]: 'text-green-800 bg-green-100',
@@ -17,7 +10,7 @@ const statusColors: Record<SaleStatus, string> = {
   [SaleStatus.Rejected]: 'text-red-800 bg-red-100',
 };
 
-const SaleRow: React.FC<{ sale: Sale }> = ({ sale }) => (
+const SaleRow: React.FC<{ sale: Sale; onEdit: (sale: Sale) => void }> = ({ sale, onEdit }) => (
   <tr className="bg-white border-b hover:bg-slate-50">
     <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{sale.clientName}</td>
     <td className="px-6 py-4">{sale.plan}</td>
@@ -29,7 +22,7 @@ const SaleRow: React.FC<{ sale: Sale }> = ({ sale }) => (
       </span>
     </td>
     <td className="px-6 py-4 text-right">
-      <button className="font-medium text-orange-600 hover:underline">
+      <button onClick={() => onEdit(sale)} className="font-medium text-orange-600 hover:underline p-2 rounded-full hover:bg-slate-100">
         <MoreHorizontalIcon />
       </button>
     </td>
@@ -37,17 +30,49 @@ const SaleRow: React.FC<{ sale: Sale }> = ({ sale }) => (
 );
 
 
-const SalesScreen: React.FC = () => {
-  const [sales, setSales] = useState<Sale[]>(initialSales);
+const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
+  const [sales, setSales] = useState<Sale[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [currentRep, setCurrentRep] = useState<Representative | null>(null);
 
-  const handleSaveSale = (newSaleData: Omit<Sale, 'id' | 'status'>) => {
-    const newSale: Sale = {
-        ...newSaleData,
-        id: sales.length + 1,
-        status: SaleStatus.Pending, // New sales are always pending
-    };
-    setSales([newSale, ...sales]);
+  const fetchSales = () => {
+     const allSales = db.getSales();
+     if (loggedInUser.role === UserRole.Representative) {
+        // Representatives see only their sales
+        const repProfile = db.getRepresentativeByUserId(loggedInUser.id);
+        if(repProfile) {
+            setCurrentRep(repProfile);
+            setSales(allSales.filter(s => s.repId === repProfile.id));
+        }
+     } else {
+        // Admins see all sales
+        setSales(allSales);
+     }
+  }
+
+  useEffect(() => {
+    fetchSales();
+  }, [loggedInUser]);
+
+  const handleOpenModal = (sale: Sale | null = null) => {
+    setEditingSale(sale);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setEditingSale(null);
+    setIsModalOpen(false);
+  }
+
+  const handleSaveSale = (saleData: Pick<Sale, 'clientName' | 'plan' | 'value' | 'date'>, id?: number) => {
+    if (id) { // Editing existing sale
+        db.updateSale(id, saleData);
+    } else if (currentRep) { // Creating new sale for current rep
+        const newSaleData = { ...saleData, repId: currentRep.id };
+        db.addSale(newSaleData);
+    }
+    fetchSales();
   };
 
   return (
@@ -60,7 +85,7 @@ const SalesScreen: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => handleOpenModal()}
               className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2"
             >
               <PlusCircleIcon />
@@ -87,7 +112,7 @@ const SalesScreen: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sales.map((sale) => <SaleRow key={sale.id} sale={sale} />)}
+                  {sales.map((sale) => <SaleRow key={sale.id} sale={sale} onEdit={handleOpenModal} />)}
                 </tbody>
               </table>
             </div>
@@ -97,8 +122,9 @@ const SalesScreen: React.FC = () => {
 
       <NewSaleModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveSale}
+        initialData={editingSale}
       />
     </>
   );

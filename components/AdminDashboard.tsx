@@ -1,44 +1,12 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSignKpiIcon, FileTextKpiIcon, FileClockKpiIcon, UserCheckKpiIcon, MoreHorizontalIcon } from './icons';
+import * as db from '../services/database';
+import { Sale, Representative, SaleStatus } from '../types';
+import ContractsScreen from './ContractsScreen'; // Cannot import, but can borrow modal
+import { XIcon, CheckCircleIcon, XCircleIcon } from './icons';
 
-// Mock Data
-const kpiData = {
-    totalValue: 5850000,
-    newContracts: 12,
-    pendingContracts: 3,
-    activeReps: 8,
-};
-
-const salesByPlanData = [
-    { name: 'Imóvel', Vendas: 3500000 },
-    { name: 'Automóvel', Vendas: 1850000 },
-    { name: 'Serviços', Vendas: 500000 },
-];
-
-const salesOverTimeData = [
-    { month: 'Fev', 'Valor (R$)': 850000 },
-    { month: 'Mar', 'Valor (R$)': 920000 },
-    { month: 'Abr', 'Valor (R$)': 1100000 },
-    { month: 'Mai', 'Valor (R$)': 1050000 },
-    { month: 'Jun', 'Valor (R$)': 1300000 },
-    { month: 'Jul', 'Valor (R$)': 1550000 },
-];
-
-const recentContracts = [
-    { id: 1, client: 'Fernanda Lima', rep: 'Carlos Andrade', plan: 'Consórcio de Imóvel', value: 450000, status: 'Pendente' },
-    { id: 2, client: 'Roberto Dias', rep: 'Sofia Ribeiro', plan: 'Consórcio de Automóvel', value: 95000, status: 'Aprovado' },
-    { id: 3, client: 'Lucas Martins', rep: 'Carlos Andrade', plan: 'Consórcio de Serviços', value: 25000, status: 'Aprovado' },
-    { id: 4, client: 'Vanessa Costa', rep: 'Juliana Paes', plan: 'Consórcio de Imóvel', value: 600000, status: 'Pendente' },
-    { id: 5, client: 'Gabriel Rocha', rep: 'Pedro Mendes', plan: 'Consórcio de Automóvel', value: 120000, status: 'Recusado' },
-];
-
-const topReps = [
-    { name: 'Carlos Andrade', sales: 12, value: 1250000 },
-    { name: 'Sofia Ribeiro', sales: 9, value: 980000 },
-    { name: 'Juliana Paes', sales: 7, value: 850000 },
-    { name: 'Pedro Mendes', sales: 5, value: 650000 },
-];
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 const formatCurrencyShort = (value: number) => {
@@ -62,12 +30,113 @@ const KPICard: React.FC<{ icon: React.ReactNode; title: string; value: string; d
 );
 
 const statusColors: { [key: string]: string } = {
-  'Aprovado': 'text-green-800 bg-green-100',
+  'Aprovada': 'text-green-800 bg-green-100',
   'Pendente': 'text-yellow-800 bg-yellow-100',
-  'Recusado': 'text-red-800 bg-red-100',
+  'Recusada': 'text-red-800 bg-red-100',
 };
 
-const AdminDashboard: React.FC = () => {
+
+const ApprovalModal: React.FC<{ contract: Sale, onClose: () => void, onUpdate: (id: number, status: SaleStatus) => void }> = ({ contract, onClose, onUpdate }) => {
+    return (
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                <div className="flex justify-between items-center p-6 border-b border-slate-200">
+                    <h3 className="text-xl font-bold text-slate-800">Analisar Contrato</h3>
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800"><XIcon /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <p><strong>Cliente:</strong> {contract.clientName}</p>
+                    <p><strong>Plano:</strong> {contract.plan}</p>
+                    <p><strong>Valor:</strong> R$ {contract.value.toLocaleString('pt-BR')}</p>
+                    <p><strong>Data da Venda:</strong> {contract.date}</p>
+                    <p><strong>Status Atual:</strong> {contract.status}</p>
+                </div>
+                 {contract.status === SaleStatus.Pending && (
+                    <div className="flex justify-end items-center p-6 bg-slate-50 border-t gap-4">
+                        <button onClick={() => { onUpdate(contract.id, SaleStatus.Rejected); onClose(); }} className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">
+                            <XCircleIcon /> Recusar
+                        </button>
+                        <button onClick={() => { onUpdate(contract.id, SaleStatus.Approved); onClose(); }} className="flex items-center gap-2 text-white font-semibold px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700">
+                            <CheckCircleIcon /> Aprovar
+                        </button>
+                    </div>
+                 )}
+            </div>
+        </div>
+    );
+};
+
+
+const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({setActiveScreen}) => {
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [reps, setReps] = useState<Representative[]>([]);
+    const [selectedContract, setSelectedContract] = useState<Sale | null>(null);
+
+    const fetchData = () => {
+        setSales(db.getSales());
+        setReps(db.getRepresentatives());
+    }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleUpdateStatus = (id: number, status: SaleStatus) => {
+        db.updateSale(id, { status });
+        fetchData(); // Refresh data
+    };
+
+    // --- Dynamic Data Calculation ---
+    const totalValue = sales.reduce((sum, sale) => sum + sale.value, 0);
+    const newContractsThisMonth = sales.filter(s => {
+        const saleDateParts = s.date.split('/');
+        const saleDate = new Date(Number(saleDateParts[2]), Number(saleDateParts[1]) - 1, Number(saleDateParts[0]));
+        const today = new Date();
+        return saleDate.getMonth() === today.getMonth() && saleDate.getFullYear() === today.getFullYear();
+    }).length;
+    const pendingContracts = sales.filter(s => s.status === SaleStatus.Pending).length;
+    const activeReps = reps.filter(r => r.status === 'Ativo').length;
+    
+    const kpiData = { totalValue, newContracts: newContractsThisMonth, pendingContracts, activeReps };
+
+    const salesByPlanData = sales.reduce((acc, sale) => {
+        const planName = sale.plan.replace('Consórcio de ', '');
+        const existing = acc.find(item => item.name === planName);
+        if (existing) {
+            existing.Vendas += sale.value;
+        } else {
+            acc.push({ name: planName, Vendas: sale.value });
+        }
+        return acc;
+    }, [] as { name: string; Vendas: number }[]);
+
+    const salesOverTimeData = sales.reduce((acc, sale) => {
+        const saleDateParts = sale.date.split('/');
+        const saleDate = new Date(Number(saleDateParts[2]), Number(saleDateParts[1]) - 1, Number(saleDateParts[0]));
+        const month = saleDate.toLocaleDateString('pt-BR', { month: 'short', timeZone: 'UTC' });
+        const existing = acc.find(item => item.month === month);
+        if (existing) {
+            existing['Valor (R$)'] += sale.value;
+        } else {
+            acc.push({ month, 'Valor (R$)': sale.value });
+        }
+        return acc;
+    }, [] as { month: string; 'Valor (R$)': number }[]).slice(-6);
+
+    const recentContracts = sales.slice(0, 5);
+
+    const topReps = reps.map(rep => {
+        const repSales = sales.filter(s => s.repId === rep.id && s.status === SaleStatus.Approved);
+        return {
+            name: rep.name,
+            sales: repSales.length,
+            value: repSales.reduce((sum, s) => sum + s.value, 0)
+        };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 4);
+    
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
@@ -82,7 +151,7 @@ const AdminDashboard: React.FC = () => {
                         icon={<DollarSignKpiIcon />} 
                         title="Valor Total Vendido" 
                         value={formatCurrencyShort(kpiData.totalValue)} 
-                        description="Acumulado este ano"
+                        description="Acumulado geral"
                     />
                     <KPICard 
                         icon={<FileTextKpiIcon />}
@@ -105,7 +174,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
                     <div className="lg:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Vendas nos Últimos 6 Meses</h3>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">Vendas nos Últimos Meses</h3>
                         <div style={{ width: '100%', height: 300 }}>
                             <ResponsiveContainer>
                                 <LineChart data={salesOverTimeData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -150,15 +219,15 @@ const AdminDashboard: React.FC = () => {
                                     {recentContracts.map(c => (
                                         <tr key={c.id} className="border-b last:border-b-0 border-slate-200 hover:bg-slate-50">
                                             <td className="px-6 py-4 font-medium text-slate-900">
-                                                {c.client}
-                                                <p className="text-xs text-slate-500 font-normal">por {c.rep}</p>
+                                                {c.clientName}
+                                                <p className="text-xs text-slate-500 font-normal">por {reps.find(r => r.id === c.repId)?.name || 'N/A'}</p>
                                             </td>
                                             <td className="px-6 py-4">{formatCurrency(c.value)}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[c.status]}`}>{c.status}</span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="text-slate-500 hover:text-orange-600 p-1 rounded-full hover:bg-slate-200"><MoreHorizontalIcon /></button>
+                                                <button onClick={() => setSelectedContract(c)} className="text-slate-500 hover:text-orange-600 p-1 rounded-full hover:bg-slate-200"><MoreHorizontalIcon /></button>
                                             </td>
                                         </tr>
                                     ))}
@@ -185,6 +254,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
             </main>
+            {selectedContract && <ApprovalModal contract={selectedContract} onClose={() => setSelectedContract(null)} onUpdate={handleUpdateStatus} />}
         </div>
     );
 };

@@ -1,26 +1,48 @@
 import React, { useState } from 'react';
 import { LogoIcon, MailIcon, LockIcon } from './icons';
+import { User } from '../types';
+import * as db from '../services/database';
+import RegistrationModal from './RegistrationModal';
+
 
 interface LoginScreenProps {
-  onLogin: () => void;
+  onLogin: (user: User) => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('admin@loop.com');
   const [password, setPassword] = useState('password123');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
+    setError('');
+
     setTimeout(() => {
-      onLogin();
-      setIsLoading(false);
-    }, 1000);
+      const user = db.findUserByEmail(email);
+      const password_hash = `hashed_${password}`;
+
+      if (user && user.password_hash === password_hash) {
+        onLogin(user);
+      } else {
+        setError('Email ou senha inválidos.');
+        setIsLoading(false);
+      }
+    }, 500);
+  };
+  
+  const handleUserRegistered = (user: User) => {
+    setIsRegisterModalOpen(false);
+    // Optionally log the user in directly after registration
+    onLogin(user);
   };
 
+
   return (
+    <>
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl border border-slate-200">
         <div className="flex flex-col items-center space-y-4">
@@ -75,6 +97,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               </div>
             </div>
           </div>
+          
+          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -110,8 +134,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             </button>
           </div>
         </form>
+        <div className="text-center text-sm text-slate-600">
+          Não tem uma conta?{' '}
+          <button onClick={() => setIsRegisterModalOpen(true)} className="font-semibold text-orange-600 hover:text-orange-500">
+            Criar Conta
+          </button>
+        </div>
       </div>
     </div>
+    <RegistrationModal 
+      isOpen={isRegisterModalOpen}
+      onClose={() => setIsRegisterModalOpen(false)}
+      onSuccess={handleUserRegistered}
+    />
+    </>
   );
 };
 

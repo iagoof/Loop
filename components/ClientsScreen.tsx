@@ -1,24 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon } from './icons';
 import { getClientAnalysis } from '../services/geminiService';
+import { Client, User, Representative } from '../types';
+import * as db from '../services/database';
+import NewClientModal from './NewClientModal';
 
-interface Client {
-  id: number;
-  name: string;
-  phone: string;
-  plan: string;
-  status: 'Cliente Ativo' | 'Lead' | 'Inativo';
-}
-
-const initialClients: Client[] = [
-  { id: 1, name: 'Maria Oliveira', phone: '(11) 98765-4321', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo' },
-  { id: 2, name: 'João Silva', phone: '(21) 91234-5678', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo' },
-  { id: 3, name: 'Carlos Pereira', phone: '(31) 95555-8888', plan: 'Consórcio de Imóvel', status: 'Inativo' },
-  { id: 4, name: 'Beatriz Lima', phone: '(41) 99999-1111', plan: 'Consórcio de Serviços', status: 'Cliente Ativo' },
-  { id: 5, name: 'Ricardo Alves', phone: '(51) 98888-2222', plan: 'Consórcio de Automóvel', status: 'Lead' },
-  { id: 6, name: 'Fernanda Lima', phone: '(61) 97777-3333', plan: 'Nenhum', status: 'Lead' },
-];
 
 const statusColors = {
   'Cliente Ativo': 'text-blue-800 bg-blue-100',
@@ -42,6 +28,12 @@ const ClientDetailPanel: React.FC<{ client: Client, onClose: () => void }> = ({ 
 
         fetchAnalysis();
     }, [client]);
+
+    const handleRegisterActivity = () => {
+        if(window.confirm(`Registrar uma nova atividade para ${client.name}?`)) {
+            alert("Atividade registrada com sucesso! (Funcionalidade de visualização de histórico em desenvolvimento).");
+        }
+    }
 
     return (
         <div className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-40 transform transition-transform duration-300 ease-in-out" style={{ transform: 'translateX(0%)' }}>
@@ -73,16 +65,38 @@ const ClientDetailPanel: React.FC<{ client: Client, onClose: () => void }> = ({ 
                     </div>
                 </main>
                 <footer className="p-6 border-t bg-slate-50">
-                    <button className="w-full bg-orange-600 text-white font-semibold py-2.5 rounded-lg hover:bg-orange-700">Registrar Atividade</button>
+                    <button onClick={handleRegisterActivity} className="w-full bg-orange-600 text-white font-semibold py-2.5 rounded-lg hover:bg-orange-700">Registrar Atividade</button>
                 </footer>
             </div>
         </div>
     );
 }
 
-const ClientsScreen: React.FC = () => {
-  const [clients] = useState(initialClients);
+const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
+  const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentRep, setCurrentRep] = useState<Representative | null>(null);
+
+  const fetchClients = () => {
+    const allClients = db.getClients();
+    const repProfile = db.getRepresentativeByUserId(loggedInUser.id);
+    if(repProfile) {
+        setCurrentRep(repProfile);
+        setClients(allClients.filter(c => c.repId === repProfile.id));
+    }
+  }
+
+  useEffect(() => {
+    fetchClients();
+  }, [loggedInUser]);
+
+  const handleSaveClient = (newClientData: Omit<Client, 'id'>) => {
+    // Assign the client to the current representative
+    const dataToSave = { ...newClientData, repId: currentRep?.id };
+    db.addClient(dataToSave);
+    fetchClients();
+  }
 
   return (
     <>
@@ -92,7 +106,7 @@ const ClientsScreen: React.FC = () => {
             <h2 className="text-2xl font-bold text-slate-800">Clientes</h2>
             <p className="text-sm text-slate-500">Sua carteira de clientes e leads.</p>
           </div>
-          <button className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2">
+          <button onClick={() => setIsModalOpen(true)} className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2">
             <PlusCircleIcon />
             <span>Adicionar Cliente/Lead</span>
           </button>
@@ -135,6 +149,11 @@ const ClientsScreen: React.FC = () => {
       </div>
       {selectedClient && <div className="fixed inset-0 bg-black bg-opacity-30 z-30" onClick={() => setSelectedClient(null)}></div>}
       {selectedClient && <ClientDetailPanel client={selectedClient} onClose={() => setSelectedClient(null)} />}
+      <NewClientModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveClient}
+      />
     </>
   );
 };

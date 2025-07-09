@@ -1,16 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sale, SaleStatus } from '../types';
 import { MoreHorizontalIcon, XIcon, CheckCircleIcon, XCircleIcon } from './icons';
-
-const initialContracts: Sale[] = [
-  { id: 1, clientName: 'Fernanda Lima', plan: 'Consórcio de Imóvel', value: 450000, date: '15/07/2025', status: SaleStatus.Pending },
-  { id: 2, clientName: 'Roberto Dias', plan: 'Consórcio de Automóvel', value: 95000, date: '14/07/2025', status: SaleStatus.Approved },
-  { id: 3, clientName: 'Lucas Martins', plan: 'Consórcio de Serviços', value: 25000, date: '12/07/2025', status: SaleStatus.Approved },
-  { id: 4, clientName: 'Vanessa Costa', plan: 'Consórcio de Imóvel', value: 600000, date: '11/07/2025', status: SaleStatus.Pending },
-  { id: 5, clientName: 'Gabriel Rocha', plan: 'Consórcio de Automóvel', value: 120000, date: '10/07/2025', status: SaleStatus.Rejected },
-  { id: 6, clientName: 'Mariana Azevedo', plan: 'Consórcio de Imóvel', value: 280000, date: '08/07/2025', status: SaleStatus.Pending },
-];
+import * as db from '../services/database';
 
 const statusColors: Record<SaleStatus, string> = {
   [SaleStatus.Approved]: 'text-green-800 bg-green-100',
@@ -33,7 +25,7 @@ const ApprovalModal: React.FC<{ contract: Sale, onClose: () => void, onUpdate: (
                     <p><strong>Data da Venda:</strong> {contract.date}</p>
                     <div>
                         <label htmlFor="notes" className="block text-sm font-semibold text-slate-700 mb-1">Observações para a recusa (opcional)</label>
-                        <textarea id="notes" rows={3} placeholder="Ex: Documentação pendente." className="w-full p-2 border rounded-lg"></textarea>
+                        <textarea id="notes" rows={3} placeholder="Ex: Documentação pendente." className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"></textarea>
                     </div>
                 </div>
                 <div className="flex justify-end items-center p-6 bg-slate-50 border-t gap-4">
@@ -51,12 +43,21 @@ const ApprovalModal: React.FC<{ contract: Sale, onClose: () => void, onUpdate: (
 
 
 const ContractsScreen: React.FC = () => {
-  const [contracts, setContracts] = useState(initialContracts);
+  const [contracts, setContracts] = useState<Sale[]>([]);
   const [filter, setFilter] = useState<SaleStatus | 'Todos'>('Todos');
   const [selectedContract, setSelectedContract] = useState<Sale | null>(null);
 
+  const fetchContracts = () => {
+    setContracts(db.getSales());
+  };
+
+  useEffect(() => {
+    fetchContracts();
+  }, []);
+
   const handleUpdateStatus = (id: number, status: SaleStatus) => {
-    setContracts(contracts.map(c => c.id === id ? { ...c, status } : c));
+    db.updateSale(id, { status });
+    fetchContracts();
   };
 
   const filteredContracts = contracts.filter(c => filter === 'Todos' || c.status === filter);

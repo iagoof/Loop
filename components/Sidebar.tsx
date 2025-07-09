@@ -21,6 +21,7 @@ interface SidebarProps {
   userRole: UserRole;
   activeScreen: string;
   setActiveScreen: (screen: string) => void;
+  onLogout: () => void;
 }
 
 const navItems: Record<UserRole, NavItem[]> = {
@@ -47,7 +48,7 @@ const navItems: Record<UserRole, NavItem[]> = {
 };
 
 
-const Sidebar: React.FC<SidebarProps> = ({ userRole, activeScreen, setActiveScreen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ userRole, activeScreen, setActiveScreen, onLogout }) => {
   const currentNavItems = navItems[userRole];
 
   return (
@@ -96,7 +97,14 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole, activeScreen, setActiveScre
           <SettingsIcon />
           Configurações
         </a>
-        <a href="#" className="flex items-center w-full px-4 py-2.5 text-red-500 hover:bg-red-50 rounded-lg font-semibold">
+        <a 
+            href="#" 
+            onClick={(e) => {
+                e.preventDefault();
+                onLogout();
+            }}
+            className="flex items-center w-full px-4 py-2.5 text-red-500 hover:bg-red-50 rounded-lg font-semibold"
+        >
           <LogoutIcon />
           Sair
         </a>

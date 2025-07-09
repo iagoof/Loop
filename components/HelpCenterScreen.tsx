@@ -1,5 +1,6 @@
 import React from 'react';
 import { BotIcon, PhoneIcon } from './icons';
+import { User } from '../types';
 
 const faqs = [
   {
@@ -24,13 +25,20 @@ const FAQItem: React.FC<{ q: string, a: string }> = ({ q, a }) => (
   <details className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 group">
     <summary className="flex justify-between items-center font-semibold text-slate-800 cursor-pointer list-none">
       {q}
-      <svg className="w-5 h-5 transition-transform transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+      <svg className="w-5 h-5 transition-transform transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
     </summary>
     <p className="text-slate-600 mt-4">{a}</p>
   </details>
 );
 
-const HelpCenterScreen: React.FC = () => {
+interface HelpCenterScreenProps {
+    setActiveScreen: (screen: string) => void;
+    loggedInUser: User;
+}
+
+const HelpCenterScreen: React.FC<HelpCenterScreenProps> = ({setActiveScreen, loggedInUser}) => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
@@ -50,7 +58,10 @@ const HelpCenterScreen: React.FC = () => {
                 <BotIcon />
                 <h3 className="text-lg font-bold text-slate-800 mt-2">Ainda com dúvidas?</h3>
                 <p className="text-slate-600 mt-2 mb-4">Nosso assistente virtual está disponível 24/7 para te ajudar com perguntas sobre seu plano.</p>
-                <button className="w-full bg-orange-600 text-white font-semibold py-2.5 rounded-lg hover:bg-orange-700">
+                <button 
+                  onClick={() => setActiveScreen('client_dashboard')}
+                  className="w-full bg-orange-600 text-white font-semibold py-2.5 rounded-lg hover:bg-orange-700"
+                >
                     Falar com Assistente Virtual
                 </button>
             </div>

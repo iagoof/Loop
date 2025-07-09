@@ -1,20 +1,11 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Client, ChatMessage } from '../types';
+import { Client, ChatMessage, User } from '../types';
 import { BotIcon, SendIcon, UserIcon } from './icons';
 import { streamChatMessage } from '../services/geminiService';
+import * as db from '../services/database';
 
-const mockClient: Client = {
-  id: 101,
-  name: 'Ana Costa',
-  plan: 'Consórcio de Automóvel - R$ 80.000,00',
-  nextPayment: '15/08/2025'
-};
-
-const Chatbot: React.FC = () => {
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        { sender: 'ai', text: `Olá, ${mockClient.name}! Sou seu assistente virtual. Como posso te ajudar hoje?` }
-    ]);
+const Chatbot: React.FC<{ client: Client }> = ({ client }) => {
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -27,20 +18,29 @@ const Chatbot: React.FC = () => {
         scrollToBottom();
     }, [messages]);
 
+    useEffect(() => {
+      setMessages([
+        { sender: 'ai', text: `Olá, ${client.name}! Sou seu assistente virtual. Como posso te ajudar hoje?` }
+      ]);
+    }, [client]);
+
+
     const handleSend = async () => {
         if (input.trim() === '' || isLoading) return;
 
         const userMessage: ChatMessage = { sender: 'user', text: input };
-        setMessages(prev => [...prev, userMessage]);
+        const currentMessages = [...messages, userMessage];
+        setMessages(currentMessages);
         setInput('');
         setIsLoading(true);
 
         const aiMessage: ChatMessage = { sender: 'ai', text: '' };
         setMessages(prev => [...prev, aiMessage]);
         
-        await streamChatMessage([...messages, userMessage], mockClient, (chunk) => {
+        await streamChatMessage(currentMessages, client, (chunk) => {
             setMessages(prev => {
                 const lastMsgIndex = prev.length - 1;
+                if(lastMsgIndex < 0) return prev;
                 const updatedMessages = [...prev];
                 updatedMessages[lastMsgIndex] = {
                     ...updatedMessages[lastMsgIndex],
@@ -100,31 +100,48 @@ const Chatbot: React.FC = () => {
 };
 
 
-const ClientDashboard: React.FC = () => {
+const ClientDashboard: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
+    const [client, setClient] = useState<Client | null>(null);
+
+    useEffect(() => {
+        const clientProfile = db.getClientByUserId(loggedInUser.id);
+        if (clientProfile) {
+            setClient(clientProfile);
+        }
+    }, [loggedInUser]);
+
+    if (!client) {
+        return (
+            <div className="flex-1 flex items-center justify-center">
+                 <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+    
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Meu Painel</h2>
-                    <p className="text-sm text-slate-500">Bem-vindo(a) de volta, {mockClient.name}!</p>
+                    <p className="text-sm text-slate-500">Bem-vindo(a) de volta, {client.name}!</p>
                 </div>
             </header>
             <main className="flex-1 p-6 overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <h4 className="font-semibold text-slate-500 mb-2">Seu Plano</h4>
-                        <p className="text-2xl font-bold text-slate-800">{mockClient.plan}</p>
+                        <p className="text-2xl font-bold text-slate-800">{client.plan}</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <h4 className="font-semibold text-slate-500 mb-2">Próximo Vencimento</h4>
-                        <p className="text-2xl font-bold text-slate-800">{mockClient.nextPayment}</p>
+                        <p className="text-2xl font-bold text-slate-800">{client.nextPayment || 'N/A'}</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <h4 className="font-semibold text-slate-500 mb-2">Próxima Assembleia</h4>
                         <p className="text-2xl font-bold text-slate-800">25/07/2025</p>
                     </div>
                 </div>
-                <Chatbot />
+                <Chatbot client={client} />
             </main>
         </div>
     );

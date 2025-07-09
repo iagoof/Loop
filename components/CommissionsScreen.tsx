@@ -1,24 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSignKpiIcon, CheckCircleIcon } from './icons';
+import { Commission } from '../types';
+import * as db from '../services/database';
 
-interface Commission {
-  id: number;
-  repName: string;
-  period: string;
-  salesValue: number;
-  commissionRate: number;
-  commissionValue: number;
-  status: 'Pendente' | 'Paga';
-}
-
-const initialCommissions: Commission[] = [
-  { id: 1, repName: 'Carlos Andrade', period: 'Jun/2025', salesValue: 1250000, commissionRate: 5, commissionValue: 62500, status: 'Paga' },
-  { id: 2, repName: 'Sofia Ribeiro', period: 'Jun/2025', salesValue: 980000, commissionRate: 5, commissionValue: 49000, status: 'Paga' },
-  { id: 3, repName: 'Juliana Paes', period: 'Jun/2025', salesValue: 850000, commissionRate: 4.5, commissionValue: 38250, status: 'Pendente' },
-  { id: 4, repName: 'Mariana Lima', period: 'Jun/2025', salesValue: 1540000, commissionRate: 5.5, commissionValue: 84700, status: 'Pendente' },
-  { id: 5, repName: 'Carlos Andrade', period: 'Mai/2025', salesValue: 1100000, commissionRate: 5, commissionValue: 55000, status: 'Paga' },
-];
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
@@ -28,7 +13,20 @@ const statusColors = {
 };
 
 const CommissionsScreen: React.FC = () => {
-  const [commissions, setCommissions] = useState(initialCommissions);
+  const [commissions, setCommissions] = useState<Commission[]>([]);
+
+  const fetchCommissions = () => {
+      setCommissions(db.getCommissions());
+  };
+
+  useEffect(() => {
+    fetchCommissions();
+  }, []);
+
+  const handleMarkAsPaid = (commissionId: number) => {
+      db.markCommissionAsPaid(commissionId);
+      fetchCommissions();
+  };
 
   const totalPending = commissions
     .filter(c => c.status === 'Pendente')
@@ -62,7 +60,7 @@ const CommissionsScreen: React.FC = () => {
                     <DollarSignKpiIcon />
                 </div>
                 <div>
-                    <p className="text-sm font-semibold text-slate-500">Total Pago (últ. 3m)</p>
+                    <p className="text-sm font-semibold text-slate-500">Total Pago (geral)</p>
                     <p className="text-3xl font-bold text-slate-800">{formatCurrency(totalPaid)}</p>
                 </div>
             </div>
@@ -75,7 +73,7 @@ const CommissionsScreen: React.FC = () => {
                 <tr>
                   <th scope="col" className="px-6 py-3">Representante</th>
                   <th scope="col" className="px-6 py-3">Período</th>
-                  <th scope="col" className="px-6 py-3">Valor de Vendas</th>
+                  <th scope="col" className="px-6 py-3">Valor da Venda</th>
                   <th scope="col" className="px-6 py-3">Comissão</th>
                   <th scope="col" className="px-6 py-3">Status</th>
                   <th scope="col" className="px-6 py-3">Ações</th>
@@ -85,7 +83,7 @@ const CommissionsScreen: React.FC = () => {
                 {commissions.map(c => (
                   <tr key={c.id} className="bg-white border-b hover:bg-slate-50">
                     <td className="px-6 py-4 font-medium text-slate-900">{c.repName}</td>
-                    <td className="px-6 py-4">{c.period}</td>
+                    <td className="px-6 py-4">{c.period.toUpperCase()}</td>
                     <td className="px-6 py-4">{formatCurrency(c.salesValue)}</td>
                     <td className="px-6 py-4 font-bold">{formatCurrency(c.commissionValue)}</td>
                     <td className="px-6 py-4">
@@ -95,7 +93,10 @@ const CommissionsScreen: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       {c.status === 'Pendente' && (
-                        <button className="flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-800">
+                        <button 
+                          onClick={() => handleMarkAsPaid(c.id)}
+                          className="flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-800"
+                        >
                           <CheckCircleIcon /> Marcar como paga
                         </button>
                       )}

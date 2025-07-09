@@ -1,17 +1,6 @@
-
-import React from 'react';
-
-const personalGoal = {
-    current: 155000,
-    target: 200000
-};
-
-const teamRanking = [
-    { rank: 1, name: 'Mariana Lima', sales: 185000, goal: 200000 },
-    { rank: 2, name: 'Carlos Andrade (Você)', sales: 155000, goal: 200000 },
-    { rank: 3, name: 'Sofia Ribeiro', sales: 142000, goal: 180000 },
-    { rank: 4, name: 'Juliana Paes', sales: 115000, goal: 150000 },
-];
+import React, { useState, useEffect } from 'react';
+import * as db from '../services/database';
+import { Representative, Sale, SaleStatus, User } from '../types';
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR')}`;
 
@@ -47,7 +36,38 @@ const GoalGauge: React.FC<{ current: number, target: number }> = ({ current, tar
 };
 
 
-const GoalsScreen: React.FC = () => {
+const GoalsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [reps, setReps] = useState<Representative[]>([]);
+    
+    useEffect(() => {
+        setSales(db.getSales());
+        setReps(db.getRepresentatives());
+    }, []);
+
+    const getSalesForRep = (repId: number) => {
+        return sales
+            .filter(s => s.repId === repId && s.status === SaleStatus.Approved)
+            .reduce((sum, s) => sum + s.value, 0);
+    }
+    
+    // For demo, let's set a static goal for everyone
+    const goal = 200000;
+    const loggedInRep = db.getRepresentativeByUserId(loggedInUser.id);
+    const personalSales = loggedInRep ? getSalesForRep(loggedInRep.id) : 0;
+
+    const teamRanking = reps
+        .map((rep, index) => ({
+            rank: index + 1,
+            id: rep.id,
+            name: rep.id === loggedInRep?.id ? `${rep.name} (Você)` : rep.name,
+            sales: getSalesForRep(rep.id),
+            goal: goal, // Static goal for now
+        }))
+        .sort((a,b) => b.sales - a.sales)
+        .map((rep, index) => ({...rep, rank: index + 1}));
+
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
@@ -60,9 +80,9 @@ const GoalsScreen: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col items-center">
                         <h3 className="text-xl font-bold text-slate-800 mb-4">Sua Meta Mensal</h3>
-                        <GoalGauge current={personalGoal.current} target={personalGoal.target} />
-                        <p className="mt-4 text-lg font-semibold text-slate-700">{formatCurrency(personalGoal.current)}</p>
-                        <p className="text-sm text-slate-500">de {formatCurrency(personalGoal.target)}</p>
+                        <GoalGauge current={personalSales} target={goal} />
+                        <p className="mt-4 text-lg font-semibold text-slate-700">{formatCurrency(personalSales)}</p>
+                        <p className="text-sm text-slate-500">de {formatCurrency(goal)}</p>
                     </div>
                     <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm">
                         <h3 className="text-xl font-bold text-slate-800 p-6">Ranking da Equipe</h3>
@@ -80,13 +100,13 @@ const GoalsScreen: React.FC = () => {
                                     {teamRanking.map(rep => {
                                         const goalPercent = (rep.sales / rep.goal) * 100;
                                         return (
-                                            <tr key={rep.rank} className={`border-b hover:bg-slate-50 ${rep.name.includes('(Você)') ? 'bg-orange-50' : ''}`}>
+                                            <tr key={rep.id} className={`border-b hover:bg-slate-50 ${rep.id === loggedInRep?.id ? 'bg-orange-50' : ''}`}>
                                                 <td className="px-6 py-4 text-center font-bold text-slate-700">{rep.rank}</td>
                                                 <td className="px-6 py-4 font-semibold text-slate-900">{rep.name}</td>
                                                 <td className="px-6 py-4 font-semibold text-slate-800">{formatCurrency(rep.sales)}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="w-full bg-slate-200 rounded-full h-2">
-                                                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${goalPercent}%` }}></div>
+                                                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${Math.min(goalPercent, 100)}%` }}></div>
                                                     </div>
                                                     <span className="text-xs text-slate-500">{goalPercent.toFixed(0)}%</span>
                                                 </td>

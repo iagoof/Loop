@@ -1,14 +1,19 @@
-
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { Client, ChatMessage } from "../types";
 
 let ai: GoogleGenAI | null = null;
+
 const getAi = (): GoogleGenAI => {
     if (!ai) {
-        // The API key is provided by the execution environment. This will throw an error
-        // if process.env.API_KEY is not available, but only when an AI function is called,
-        // allowing the rest of the application to render.
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        // The API key is expected to be available as an environment variable.
+        // This is typically configured in the Vercel project settings or a local .env file.
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) {
+            const errorMessage = "Gemini API key not found. Please ensure the API_KEY environment variable is set.";
+            console.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+        ai = new GoogleGenAI({ apiKey });
     }
     return ai;
 };
@@ -19,13 +24,14 @@ let chatInstance: Chat | null = null;
 
 const getChatInstance = (client: Client): Chat => {
     if (!chatInstance) {
-        chatInstance = getAi().chats.create({
+        const googleAi = getAi();
+        chatInstance = googleAi.chats.create({
             model: 'gemini-2.5-flash',
             config: {
                 systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. 
                 You are talking to ${client.name}. 
                 Their current plan is ${client.plan}. 
-                Their next payment is due on ${client.nextPayment}. 
+                ${client.nextPayment ? `Their next payment is due on ${client.nextPayment}.` : 'They do not have a next payment scheduled.'} 
                 Answer their questions concisely and politely based on this information.
                 Do not invent information. If you don't know the answer, say you cannot help with that request.`,
             },
@@ -51,11 +57,12 @@ export const streamChatMessage = async (
     onChunk: (chunk: string) => void
 ): Promise<void> => {
     try {
+        const googleAi = getAi();
         // Simple history for context, not using the full chat object for this example
-        const chat = getAi().chats.create({
+        const chat = googleAi.chats.create({
              model: 'gemini-2.5-flash',
              config: {
-                systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. You are talking to ${client.name}. Their current plan is ${client.plan}. Their next payment is due on ${client.nextPayment}. Answer their questions concisely and politely based on this information.`,
+                systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. You are talking to ${client.name}. Their current plan is ${client.plan}. ${client.nextPayment ? `Their next payment is due on ${client.nextPayment}.` : 'They do not have a next payment scheduled.'} Answer their questions concisely and politely based on this information.`,
              },
              history: messages.map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'model',
@@ -81,7 +88,8 @@ export const streamChatMessage = async (
 
 export const getClientAnalysis = async (clientHistory: string): Promise<string> => {
     try {
-        const response = await getAi().models.generateContent({
+        const googleAi = getAi();
+        const response = await googleAi.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Baseado no seguinte histórico de interações com o cliente, gere um resumo do perfil e sugira a próxima ação de venda mais apropriada. Seja breve e direto. Histórico: "${clientHistory}"`,
         });
@@ -94,9 +102,10 @@ export const getClientAnalysis = async (clientHistory: string): Promise<string> 
 
 export const getStrategicReport = async (query: string): Promise<string> => {
     try {
+        const googleAi = getAi();
         // In a real app, you would pass relevant, summarized business data in the prompt.
         const prompt = `Como um analista de negócios da Loop Soluções Financeiras, responda à seguinte pergunta com base nos dados (simulados) da empresa. Pergunta: "${query}"`;
-        const response = await getAi().models.generateContent({
+        const response = await googleAi.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
         });

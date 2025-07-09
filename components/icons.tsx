@@ -34,6 +34,8 @@ import {
   Phone,
   Mail,
   Lock,
+  ArrowRight,
+  ArrowUpCircle,
 } from 'lucide-react';
 
 export const LogoIcon = () => (
@@ -88,10 +90,12 @@ export const UserCheckIcon = () => <UserCheck className={actionIconClass} />;
 export const UserXIcon = () => <UserX className={actionIconClass} />;
 export const CheckCircleIcon = () => <CheckCircle className="w-5 h-5 text-green-500" />;
 export const XCircleIcon = () => <XCircle className="w-5 h-5 text-red-500" />;
+export const ArrowUpCircleIcon = () => <ArrowUpCircle className="w-5 h-5 text-blue-500" />;
 export const DownloadIcon = () => <Download className="w-5 h-5" />;
 export const PhoneIcon = () => <Phone className="w-4 h-4 mr-2" />;
 export const MailIcon = () => <Mail className="w-4 h-4 text-slate-400" />;
 export const LockIcon = () => <Lock className="w-4 h-4 text-slate-400" />;
+export const ArrowRightIcon = () => <ArrowRight className="w-6 h-6 ml-2" />;
 
 
 // KPI Icons (Larger)
