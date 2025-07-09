@@ -2,21 +2,24 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { Client, ChatMessage } from "../types";
 
-// Ensure the API key is available in the environment variables
-if (!process.env.API_KEY) {
-  // In a real app, you'd want to handle this more gracefully.
-  // For this context, we will throw an error to make it clear.
-  throw new Error("API_KEY environment variable not set.");
-}
+let ai: GoogleGenAI | null = null;
+const getAi = (): GoogleGenAI => {
+    if (!ai) {
+        // The API key is provided by the execution environment. This will throw an error
+        // if process.env.API_KEY is not available, but only when an AI function is called,
+        // allowing the rest of the application to render.
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    }
+    return ai;
+};
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 let chatInstance: Chat | null = null;
 
 // --- CHATBOT FUNCTIONALITY ---
 
 const getChatInstance = (client: Client): Chat => {
     if (!chatInstance) {
-        chatInstance = ai.chats.create({
+        chatInstance = getAi().chats.create({
             model: 'gemini-2.5-flash',
             config: {
                 systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. 
@@ -49,7 +52,7 @@ export const streamChatMessage = async (
 ): Promise<void> => {
     try {
         // Simple history for context, not using the full chat object for this example
-        const chat = ai.chats.create({
+        const chat = getAi().chats.create({
              model: 'gemini-2.5-flash',
              config: {
                 systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. You are talking to ${client.name}. Their current plan is ${client.plan}. Their next payment is due on ${client.nextPayment}. Answer their questions concisely and politely based on this information.`,
@@ -78,7 +81,7 @@ export const streamChatMessage = async (
 
 export const getClientAnalysis = async (clientHistory: string): Promise<string> => {
     try {
-        const response = await ai.models.generateContent({
+        const response = await getAi().models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Baseado no seguinte histórico de interações com o cliente, gere um resumo do perfil e sugira a próxima ação de venda mais apropriada. Seja breve e direto. Histórico: "${clientHistory}"`,
         });
@@ -93,7 +96,7 @@ export const getStrategicReport = async (query: string): Promise<string> => {
     try {
         // In a real app, you would pass relevant, summarized business data in the prompt.
         const prompt = `Como um analista de negócios da Loop Soluções Financeiras, responda à seguinte pergunta com base nos dados (simulados) da empresa. Pergunta: "${query}"`;
-        const response = await ai.models.generateContent({
+        const response = await getAi().models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
         });

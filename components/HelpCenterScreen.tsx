@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BotIcon, PhoneIcon } from './icons';
 
