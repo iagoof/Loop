@@ -15,6 +15,8 @@ import {
   PercentIcon,
   FilePieChartIcon,
   DownloadCloudIcon,
+  MessageCircleIcon,
+  FileSignatureIcon,
 } from './icons';
 
 interface SidebarProps {
@@ -31,7 +33,9 @@ const navItems: Record<UserRole, NavItem[]> = {
     { label: 'Planos', icon: <FileSpreadsheetIcon />, screen: 'plans' },
     { label: 'Contratos', icon: <FileCheck2Icon />, screen: 'contracts' },
     { label: 'Comissões', icon: <PercentIcon />, screen: 'commissions' },
+    { label: 'Modelo Contrato', icon: <FileSignatureIcon />, screen: 'contract_template' },
     { label: 'Relatórios IA', icon: <ReportsIcon />, screen: 'reports' },
+    { label: 'WhatsApp Bot', icon: <MessageCircleIcon />, screen: 'whatsapp_bot' },
   ],
   [UserRole.Representative]: [
     { label: 'Dashboard', icon: <DashboardIcon />, screen: 'rep_dashboard' },

@@ -1,5 +1,5 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
-import { Client, ChatMessage } from "../types";
+import { Client, ChatMessage, WhatsAppMessage } from "../types";
 
 let ai: GoogleGenAI | null = null;
 
@@ -113,5 +113,45 @@ export const getStrategicReport = async (query: string): Promise<string> => {
     } catch (error) {
         console.error("Gemini strategic report error:", error);
         return "Não foi possível gerar o relatório. Verifique sua consulta e tente novamente.";
+    }
+};
+
+
+export const getWhatsAppBotReply = async (
+    clientMessage: string, 
+    client: Client | undefined, 
+    chatHistory: WhatsAppMessage[]
+): Promise<string> => {
+    if (!client) {
+        return "Desculpe, não consegui identificar os dados do cliente para responder.";
+    }
+
+    try {
+        const googleAi = getAi();
+        const historyText = chatHistory
+            .map(m => `${m.sender === 'client' ? 'Cliente' : 'Assistente'}: ${m.text}`)
+            .join('\n');
+
+        const prompt = `Você é um assistente de IA da Loop Soluções Financeiras. Sua tarefa é responder a uma mensagem de WhatsApp de um cliente.
+        
+        **Dados do Cliente:**
+        ${JSON.stringify(client, null, 2)}
+
+        **Histórico da Conversa Recente:**
+        ${historyText}
+        
+        **Nova Mensagem do Cliente:**
+        "${clientMessage}"
+
+        Baseado nos dados do cliente, no histórico e na nova mensagem, formule uma resposta clara, profissional e concisa. Se a informação não estiver disponível nos dados fornecidos, informe educadamente que não pode ajudar com essa solicitação específica. Responda apenas como o assistente.`;
+
+        const response = await googleAi.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return response.text;
+    } catch (error) {
+        console.error("Gemini WhatsApp bot error:", error);
+        return "Desculpe, não foi possível gerar uma resposta de IA no momento.";
     }
 };

@@ -20,6 +20,8 @@ import SettingsScreen from './components/SettingsScreen';
 import LoginScreen from './components/LoginScreen';
 import SplashScreen from './components/SplashScreen';
 import { seedDatabase } from './services/database';
+import WhatsAppBotScreen from './components/WhatsAppBotScreen';
+import ContractTemplateScreen from './components/ContractTemplateScreen';
 
 const App: React.FC = () => {
     const [showSplash, setShowSplash] = useState(true);
@@ -52,7 +54,9 @@ const App: React.FC = () => {
         plans: <PlansScreen />,
         contracts: <ContractsScreen />,
         commissions: <CommissionsScreen />,
+        contract_template: <ContractTemplateScreen />,
         reports: <StrategicReports />,
+        whatsapp_bot: <WhatsAppBotScreen />,
 
         // Representative - Pass loggedInUser to scope data
         rep_dashboard: loggedInUser && <RepDashboardScreen loggedInUser={loggedInUser} />,

@@ -43,7 +43,10 @@ export interface Client {
   userId?: number; // Link to User
   repId?: number; // Link to Representative
   name: string;
+  email?: string;
   phone: string;
+  document?: string;
+  address?: string;
   plan: string;
   status: 'Cliente Ativo' | 'Lead' | 'Inativo';
   nextPayment?: string;
@@ -80,4 +83,21 @@ export interface Commission {
   salesValue: number;
   commissionValue: number;
   status: 'Pendente' | 'Paga';
+}
+
+export interface WhatsAppMessage {
+    id: number;
+    sender: 'client' | 'bot' | 'admin';
+    text: string;
+    timestamp: string; // ISO 8601 format
+}
+
+export interface WhatsAppChat {
+    id: number;
+    clientId: number;
+    clientName: string;
+    clientPhone: string;
+    messages: WhatsAppMessage[];
+    lastMessageTimestamp: string;
+    isTyping?: boolean;
 }

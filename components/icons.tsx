@@ -36,6 +36,9 @@ import {
   Lock,
   ArrowRight,
   ArrowUpCircle,
+  MessageCircle,
+  ShieldCheck,
+  FileSignature,
 } from 'lucide-react';
 
 export const LogoIcon = () => (
@@ -73,6 +76,8 @@ export const FileCheck2Icon = () => <FileCheck2 className={sidebarIconClass} />;
 export const PercentIcon = () => <Percent className={sidebarIconClass} />;
 export const FilePieChartIcon = () => <FilePieChart className={sidebarIconClass} />;
 export const DownloadCloudIcon = () => <DownloadCloud className={sidebarIconClass} />;
+export const MessageCircleIcon = () => <MessageCircle className={sidebarIconClass} />;
+export const FileSignatureIcon = () => <FileSignature className={sidebarIconClass} />;
 
 
 // General UI Icons
@@ -96,6 +101,7 @@ export const PhoneIcon = () => <Phone className="w-4 h-4 mr-2" />;
 export const MailIcon = () => <Mail className="w-4 h-4 text-slate-400" />;
 export const LockIcon = () => <Lock className="w-4 h-4 text-slate-400" />;
 export const ArrowRightIcon = () => <ArrowRight className="w-6 h-6 ml-2" />;
+export const ShieldCheckIcon = () => <ShieldCheck className="w-6 h-6" />;
 
 
 // KPI Icons (Larger)

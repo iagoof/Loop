@@ -1,4 +1,4 @@
-import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole } from '../types';
+import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole, WhatsAppChat, WhatsAppMessage } from '../types';
 
 // --- DATA SECURITY NOTE ---
 // In a real application, NEVER store plain text passwords.
@@ -28,18 +28,18 @@ const initialReps: Representative[] = [
 ];
 
 const initialClients: Client[] = [
-  { id: 1, userId: 1, repId: 2, name: 'Maria Oliveira', phone: '(11) 98765-4321', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '20/08/2025' },
-  { id: 2, repId: 1, name: 'João Silva', phone: '(21) 91234-5678', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo', nextPayment: '25/08/2025' },
-  { id: 3, repId: 2, name: 'Carlos Pereira', phone: '(31) 95555-8888', plan: 'Consórcio de Imóvel', status: 'Inativo' },
-  { id: 4, repId: 3, name: 'Beatriz Lima', phone: '(41) 99999-1111', plan: 'Consórcio de Serviços', status: 'Cliente Ativo', nextPayment: '10/09/2025' },
-  { id: 5, repId: 1, name: 'Ricardo Alves', phone: '(51) 98888-2222', plan: 'Consórcio de Automóvel', status: 'Lead' },
-  { id: 6, repId: 1, name: 'Fernanda Lima', phone: '(61) 97777-3333', plan: 'Nenhum', status: 'Lead' },
-  { id: 7, repId: 5, name: 'Roberto Dias', phone: '(61) 97777-3334', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo', nextPayment: '05/09/2025' },
-  { id: 8, repId: 3, name: 'Lucas Martins', phone: '(61) 97777-3335', plan: 'Consórcio de Serviços', status: 'Cliente Ativo', nextPayment: '08/09/2025' },
-  { id: 9, repId: 2, name: 'Vanessa Costa', phone: '(61) 97777-3336', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '12/09/2025' },
-  { id: 10, repId: 4, name: 'Gabriel Rocha', phone: '(61) 97777-3337', plan: 'Consórcio de Automóvel', status: 'Inativo' },
-  { id: 11, repId: 5, name: 'Mariana Azevedo', phone: '(61) 97777-3338', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '18/09/2025' },
-  { id: 12, userId: 12, repId: 1, name: 'Ana Costa', phone: '(11) 98765-1111', plan: 'Consórcio de Automóvel - R$ 80.000,00', status: 'Cliente Ativo', nextPayment: '15/08/2025' },
+  { id: 1, userId: 1, repId: 2, name: 'Maria Oliveira', email: 'maria.o@example.com', phone: '(11) 98765-4321', document: '123.456.789-10', address: 'Rua das Flores, 123, São Paulo, SP', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '20/08/2025' },
+  { id: 2, repId: 1, name: 'João Silva', email: 'joao.s@example.com', phone: '(21) 91234-5678', document: '234.567.890-11', address: 'Avenida Copacabana, 456, Rio de Janeiro, RJ', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo', nextPayment: '25/08/2025' },
+  { id: 3, repId: 2, name: 'Carlos Pereira', email: 'carlos.p@example.com', phone: '(31) 95555-8888', document: '345.678.901-22', address: 'Rua da Bahia, 789, Belo Horizonte, MG', plan: 'Consórcio de Imóvel', status: 'Inativo' },
+  { id: 4, repId: 3, name: 'Beatriz Lima', email: 'beatriz.l@example.com', phone: '(41) 99999-1111', document: '456.789.012-33', address: 'Rua das Araucárias, 101, Curitiba, PR', plan: 'Consórcio de Serviços', status: 'Cliente Ativo', nextPayment: '10/09/2025' },
+  { id: 5, repId: 1, name: 'Ricardo Alves', email: 'ricardo.a@example.com', phone: '(51) 98888-2222', document: '567.890.123-44', address: 'Avenida Ipiranga, 202, Porto Alegre, RS', plan: 'Consórcio de Automóvel', status: 'Lead' },
+  { id: 6, repId: 1, name: 'Fernanda Lima', email: 'fernanda.l@example.com', phone: '(61) 97777-3333', document: '678.901.234-55', address: 'Eixo Monumental, 303, Brasília, DF', plan: 'Nenhum', status: 'Lead' },
+  { id: 7, repId: 5, name: 'Roberto Dias', email: 'roberto.d@example.com', phone: '(71) 97777-3334', document: '789.012.345-66', address: 'Avenida Oceânica, 404, Salvador, BA', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo', nextPayment: '05/09/2025' },
+  { id: 8, repId: 3, name: 'Lucas Martins', email: 'lucas.m@example.com', phone: '(81) 97777-3335', document: '890.123.456-77', address: 'Rua da Moeda, 505, Recife, PE', plan: 'Consórcio de Serviços', status: 'Cliente Ativo', nextPayment: '08/09/2025' },
+  { id: 9, repId: 2, name: 'Vanessa Costa', email: 'vanessa.c@example.com', phone: '(85) 97777-3336', document: '901.234.567-88', address: 'Avenida Beira Mar, 606, Fortaleza, CE', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '12/09/2025' },
+  { id: 10, repId: 4, name: 'Gabriel Rocha', email: 'gabriel.r@example.com', phone: '(92) 97777-3337', document: '012.345.678-99', address: 'Rua do Comércio, 707, Manaus, AM', plan: 'Consórcio de Automóvel', status: 'Inativo' },
+  { id: 11, repId: 5, name: 'Mariana Azevedo', email: 'mariana.az@example.com', phone: '(48) 97777-3338', document: '111.222.333-44', address: 'Avenida Beira Mar Norte, 808, Florianópolis, SC', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '18/09/2025' },
+  { id: 12, userId: 12, repId: 1, name: 'Ana Costa', email: 'ana.c@example.com', phone: '(11) 98765-1111', document: '555.666.777-88', address: 'Avenida Paulista, 909, São Paulo, SP', plan: 'Consórcio de Automóvel - R$ 80.000,00', status: 'Cliente Ativo', nextPayment: '15/08/2025' },
 ];
 
 const initialSales: Sale[] = [
@@ -63,6 +63,55 @@ const initialPlans: Plan[] = [
   { id: 5, name: 'Moto Zera', type: 'Automóvel', valueRange: [15000, 40000], term: 60, adminFee: 16 },
 ];
 
+const initialWhatsAppChats: WhatsAppChat[] = [
+    {
+        id: 1,
+        clientId: 2,
+        clientName: 'João Silva',
+        clientPhone: '(21) 91234-5678',
+        lastMessageTimestamp: new Date().toISOString(),
+        messages: [
+            { id: 1, sender: 'client', text: 'Olá, gostaria de saber o status do meu consórcio.', timestamp: new Date().toISOString() },
+            { id: 2, sender: 'bot', text: 'Olá, João! Seu consórcio de Automóvel está ativo e com os pagamentos em dia. O próximo vencimento é em 25/08/2025. Posso ajudar em algo mais?', timestamp: new Date().toISOString() },
+        ]
+    }
+];
+
+const DEFAULT_CONTRACT_TEMPLATE = `CONTRATO DE ADESÃO A GRUPO DE CONSÓRCIO
+
+CONTRATANTE:
+Nome: {{CLIENT_NAME}}
+CPF/CNPJ: {{CLIENT_DOCUMENT}}
+Endereço: {{CLIENT_ADDRESS}}
+Email: {{CLIENT_EMAIL}}
+Telefone: {{CLIENT_PHONE}}
+
+REPRESENTANTE: {{REP_NAME}}
+
+----------------------------------------------------
+
+Pelo presente instrumento, a CONTRATANTE adere ao grupo de consórcio para aquisição do seguinte bem ou serviço, sob as condições abaixo:
+
+PLANO: {{SALE_PLAN_NAME}}
+VALOR DO CRÉDITO: R$ {{SALE_VALUE}}
+DATA DA VENDA: {{SALE_DATE}}
+
+Este contrato é regido pelas cláusulas e condições gerais do regulamento do grupo de consórcio, que a CONTRATANTE declara ter lido e concordado na íntegra.
+
+A contemplação ocorrerá por sorteio ou lance, conforme as regras da administradora.
+
+Local e Data: São Paulo, {{TODAY_DATE}}.
+
+
+________________________________________
+{{CLIENT_NAME}}
+(Contratante)
+
+________________________________________
+Loop Soluções Financeiras
+(Administradora)
+`;
+
 
 // --- DB HELPER FUNCTIONS ---
 const get = <T>(key: string, defaultValue: T): T => {
@@ -84,18 +133,21 @@ const set = <T>(key: string, value: T): void => {
 };
 
 const getNextId = <T extends {id: number}>(items: T[]): number => {
+    if (!items || items.length === 0) return 1;
     return items.reduce((maxId, item) => Math.max(item.id, maxId), 0) + 1;
 };
 
 // --- DATABASE SEEDING ---
 export const seedDatabase = () => {
-    if (!localStorage.getItem('seeded_v3')) { // Bump version to re-seed with new data structure
+    if (!localStorage.getItem('seeded_v4')) { // Bump version to re-seed with new data structure
         set('users', initialUsers);
         set('sales', initialSales);
         set('clients', initialClients);
         set('representatives', initialReps);
         set('plans', initialPlans);
-        localStorage.setItem('seeded_v3', 'true');
+        set('whatsapp_chats', initialWhatsAppChats);
+        set('contract_template', DEFAULT_CONTRACT_TEMPLATE);
+        localStorage.setItem('seeded_v4', 'true');
     }
 };
 
@@ -122,7 +174,7 @@ export const registerUser = (data: Omit<User, 'id' | 'password_hash'> & { passwo
 
     // If a new client or rep is registered, create a corresponding profile
     if(newUser.role === UserRole.Client) {
-        addClient({ name: newUser.name, phone: '', plan: 'Nenhum', status: 'Lead', userId: newUser.id });
+        addClient({ name: newUser.name, email: newUser.email, phone: '', document: '', address: '', plan: 'Nenhum', status: 'Lead', userId: newUser.id });
     } else if (newUser.role === UserRole.Representative) {
         addRepresentative({ name: newUser.name, email: newUser.email, commissionRate: 4, userId: newUser.id });
     }
@@ -257,3 +309,88 @@ export const getCommissions = (): Commission[] => {
 export const markCommissionAsPaid = (saleId: number): void => {
     updateSale(saleId, { commissionPaid: true });
 };
+
+
+// --- WHATSAPP BOT ---
+
+export const getWhatsAppChats = (): WhatsAppChat[] => {
+    const chats = get<WhatsAppChat[]>('whatsapp_chats', []);
+    return chats.sort((a,b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime());
+};
+
+export const addWhatsAppMessage = (chatId: number, message: Omit<WhatsAppMessage, 'id'|'timestamp'>): WhatsAppChat | undefined => {
+    const chats = getWhatsAppChats();
+    let updatedChat: WhatsAppChat | undefined;
+    const newTimestamp = new Date().toISOString();
+
+    const newChats = chats.map(chat => {
+        if (chat.id === chatId) {
+            const newMessage: WhatsAppMessage = {
+                ...message,
+                id: getNextId(chat.messages),
+                timestamp: newTimestamp
+            };
+            updatedChat = { 
+                ...chat, 
+                messages: [...chat.messages, newMessage],
+                lastMessageTimestamp: newTimestamp
+            };
+            return updatedChat;
+        }
+        return chat;
+    });
+
+    if (updatedChat) {
+        set('whatsapp_chats', newChats);
+    }
+    return updatedChat;
+};
+
+export const simulateIncomingWhatsAppMessage = (): { chat: WhatsAppChat, newMessage: WhatsAppMessage } | null => {
+    const clients = getClients().filter(c => c.status === 'Cliente Ativo');
+    if(clients.length === 0) return null;
+
+    const randomClient = clients[Math.floor(Math.random() * clients.length)];
+    const queries = [
+        `Olá, qual o status do meu plano ${randomClient.plan}?`,
+        `Quando vence minha próxima parcela?`,
+        `Gostaria de saber o saldo devedor do meu consórcio.`,
+        `Como faço para ofertar um lance?`,
+        `Perdi a data de pagamento, e agora?`,
+    ];
+    const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+
+    let chats = getWhatsAppChats();
+    let chat = chats.find(c => c.clientId === randomClient.id);
+    const newTimestamp = new Date().toISOString();
+
+    if (!chat) {
+        chat = {
+            id: getNextId(chats),
+            clientId: randomClient.id,
+            clientName: randomClient.name,
+            clientPhone: randomClient.phone,
+            messages: [],
+            lastMessageTimestamp: newTimestamp
+        };
+        chats = [chat, ...chats];
+    }
+
+    const newMessage: WhatsAppMessage = {
+        id: getNextId(chat.messages),
+        sender: 'client',
+        text: randomQuery,
+        timestamp: newTimestamp
+    };
+
+    chat.messages.push(newMessage);
+    chat.lastMessageTimestamp = newTimestamp;
+    
+    set('whatsapp_chats', chats);
+
+    return { chat, newMessage };
+};
+
+// --- CONTRACT TEMPLATE ---
+export const getContractTemplate = (): string => get('contract_template', DEFAULT_CONTRACT_TEMPLATE);
+export const setContractTemplate = (template: string): void => set('contract_template', template);

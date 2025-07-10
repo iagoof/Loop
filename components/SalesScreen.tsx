@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sale, SaleStatus, User, UserRole, Representative } from '../types';
-import { PlusCircleIcon, MoreHorizontalIcon } from './icons';
+import { PlusCircleIcon, MoreHorizontalIcon, DownloadIcon } from './icons';
 import NewSaleModal from './NewSaleModal';
 import * as db from '../services/database';
 
@@ -10,7 +10,7 @@ const statusColors: Record<SaleStatus, string> = {
   [SaleStatus.Rejected]: 'text-red-800 bg-red-100',
 };
 
-const SaleRow: React.FC<{ sale: Sale; onEdit: (sale: Sale) => void }> = ({ sale, onEdit }) => (
+const SaleRow: React.FC<{ sale: Sale; onEdit: (sale: Sale) => void; onDownload: (sale: Sale) => void; }> = ({ sale, onEdit, onDownload }) => (
   <tr className="bg-white border-b hover:bg-slate-50">
     <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{sale.clientName}</td>
     <td className="px-6 py-4">{sale.plan}</td>
@@ -22,9 +22,14 @@ const SaleRow: React.FC<{ sale: Sale; onEdit: (sale: Sale) => void }> = ({ sale,
       </span>
     </td>
     <td className="px-6 py-4 text-right">
-      <button onClick={() => onEdit(sale)} className="font-medium text-orange-600 hover:underline p-2 rounded-full hover:bg-slate-100">
-        <MoreHorizontalIcon />
-      </button>
+      <div className="flex items-center justify-end space-x-1">
+        <button onClick={() => onDownload(sale)} className="font-medium text-blue-600 p-2 rounded-full hover:bg-slate-100" title="Baixar Contrato">
+          <DownloadIcon />
+        </button>
+        <button onClick={() => onEdit(sale)} className="font-medium text-orange-600 p-2 rounded-full hover:bg-slate-100" title="Editar Venda">
+          <MoreHorizontalIcon />
+        </button>
+      </div>
     </td>
   </tr>
 );
@@ -74,6 +79,46 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     }
     fetchSales();
   };
+  
+  const handleDownloadContract = (sale: Sale) => {
+    let template = db.getContractTemplate();
+    const client = db.getClients().find(c => c.name === sale.clientName);
+    const rep = db.getRepresentatives().find(r => r.id === sale.repId);
+    
+    if (!client) {
+        alert('Cliente não encontrado para gerar o contrato.');
+        return;
+    }
+
+    const replacements: { [key: string]: string } = {
+        '{{CLIENT_NAME}}': client.name,
+        '{{CLIENT_EMAIL}}': client.email || 'N/A',
+        '{{CLIENT_PHONE}}': client.phone,
+        '{{CLIENT_DOCUMENT}}': client.document || 'N/A',
+        '{{CLIENT_ADDRESS}}': client.address || 'N/A',
+        '{{SALE_PLAN_NAME}}': sale.plan,
+        '{{SALE_VALUE}}': sale.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+        '{{SALE_DATE}}': sale.date,
+        '{{REP_NAME}}': rep ? rep.name : 'N/A',
+        '{{TODAY_DATE}}': new Date().toLocaleDateString('pt-BR'),
+    };
+    
+    let contractText = template;
+    for (const key in replacements) {
+        contractText = contractText.replace(new RegExp(key, 'g'), replacements[key]);
+    }
+
+    const blob = new Blob([contractText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Contrato_${client.name.replace(/\s/g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
 
   return (
     <>
@@ -112,7 +157,7 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sales.map((sale) => <SaleRow key={sale.id} sale={sale} onEdit={handleOpenModal} />)}
+                  {sales.map((sale) => <SaleRow key={sale.id} sale={sale} onEdit={handleOpenModal} onDownload={handleDownloadContract} />)}
                 </tbody>
               </table>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon } from './icons';
+import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon, MailIcon } from './icons';
 import { getClientAnalysis } from '../services/geminiService';
 import { Client, User, Representative } from '../types';
 import * as db from '../services/database';
@@ -47,8 +47,20 @@ const ClientDetailPanel: React.FC<{ client: Client, onClose: () => void }> = ({ 
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[client.status]}`}>{client.status}</span>
                         </div>
                         <div>
+                            <p className="text-sm font-semibold text-slate-500">Email</p>
+                            <p className="text-slate-700 flex items-center"><MailIcon /> {client.email || 'Não informado'}</p>
+                        </div>
+                        <div>
                             <p className="text-sm font-semibold text-slate-500">Telefone</p>
                             <p className="text-slate-700 flex items-center"><PhoneIcon /> {client.phone}</p>
+                        </div>
+                         <div>
+                            <p className="text-sm font-semibold text-slate-500">Documento (CPF/CNPJ)</p>
+                            <p className="text-slate-700">{client.document || 'Não informado'}</p>
+                        </div>
+                         <div>
+                            <p className="text-sm font-semibold text-slate-500">Endereço</p>
+                            <p className="text-slate-700">{client.address || 'Não informado'}</p>
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-slate-500">Plano Atual</p>
