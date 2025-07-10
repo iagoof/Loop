@@ -28,31 +28,32 @@ const initialReps: Representative[] = [
 ];
 
 const initialClients: Client[] = [
-  { id: 1, userId: 1, repId: 2, name: 'Maria Oliveira', email: 'maria.o@example.com', phone: '(11) 98765-4321', document: '123.456.789-10', address: 'Rua das Flores, 123, São Paulo, SP', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '20/08/2025' },
-  { id: 2, repId: 1, name: 'João Silva', email: 'joao.s@example.com', phone: '(21) 91234-5678', document: '234.567.890-11', address: 'Avenida Copacabana, 456, Rio de Janeiro, RJ', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo', nextPayment: '25/08/2025' },
-  { id: 3, repId: 2, name: 'Carlos Pereira', email: 'carlos.p@example.com', phone: '(31) 95555-8888', document: '345.678.901-22', address: 'Rua da Bahia, 789, Belo Horizonte, MG', plan: 'Consórcio de Imóvel', status: 'Inativo' },
-  { id: 4, repId: 3, name: 'Beatriz Lima', email: 'beatriz.l@example.com', phone: '(41) 99999-1111', document: '456.789.012-33', address: 'Rua das Araucárias, 101, Curitiba, PR', plan: 'Consórcio de Serviços', status: 'Cliente Ativo', nextPayment: '10/09/2025' },
-  { id: 5, repId: 1, name: 'Ricardo Alves', email: 'ricardo.a@example.com', phone: '(51) 98888-2222', document: '567.890.123-44', address: 'Avenida Ipiranga, 202, Porto Alegre, RS', plan: 'Consórcio de Automóvel', status: 'Lead' },
+  { id: 1, userId: 1, repId: 2, name: 'Maria Oliveira', email: 'maria.o@example.com', phone: '(11) 98765-4321', document: '123.456.789-10', address: 'Rua das Flores, 123, São Paulo, SP', plan: 'Casa na Praia', status: 'Cliente Ativo', nextPayment: '20/08/2025' },
+  { id: 2, repId: 1, name: 'João Silva', email: 'joao.s@example.com', phone: '(21) 91234-5678', document: '234.567.890-11', address: 'Avenida Copacabana, 456, Rio de Janeiro, RJ', plan: 'Carro Novo', status: 'Cliente Ativo', nextPayment: '25/08/2025' },
+  { id: 3, repId: 2, name: 'Carlos Pereira', email: 'carlos.p@example.com', phone: '(31) 95555-8888', document: '345.678.901-22', address: 'Rua da Bahia, 789, Belo Horizonte, MG', plan: 'Meu Apê', status: 'Inativo' },
+  { id: 4, repId: 3, name: 'Beatriz Lima', email: 'beatriz.l@example.com', phone: '(41) 99999-1111', document: '456.789.012-33', address: 'Rua das Araucárias, 101, Curitiba, PR', plan: 'Sua Viagem', status: 'Cliente Ativo', nextPayment: '10/09/2025' },
+  { id: 5, repId: 1, name: 'Ricardo Alves', email: 'ricardo.a@example.com', phone: '(51) 98888-2222', document: '567.890.123-44', address: 'Avenida Ipiranga, 202, Porto Alegre, RS', plan: 'Carro Novo', status: 'Lead' },
   { id: 6, repId: 1, name: 'Fernanda Lima', email: 'fernanda.l@example.com', phone: '(61) 97777-3333', document: '678.901.234-55', address: 'Eixo Monumental, 303, Brasília, DF', plan: 'Nenhum', status: 'Lead' },
-  { id: 7, repId: 5, name: 'Roberto Dias', email: 'roberto.d@example.com', phone: '(71) 97777-3334', document: '789.012.345-66', address: 'Avenida Oceânica, 404, Salvador, BA', plan: 'Consórcio de Automóvel', status: 'Cliente Ativo', nextPayment: '05/09/2025' },
-  { id: 8, repId: 3, name: 'Lucas Martins', email: 'lucas.m@example.com', phone: '(81) 97777-3335', document: '890.123.456-77', address: 'Rua da Moeda, 505, Recife, PE', plan: 'Consórcio de Serviços', status: 'Cliente Ativo', nextPayment: '08/09/2025' },
-  { id: 9, repId: 2, name: 'Vanessa Costa', email: 'vanessa.c@example.com', phone: '(85) 97777-3336', document: '901.234.567-88', address: 'Avenida Beira Mar, 606, Fortaleza, CE', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '12/09/2025' },
-  { id: 10, repId: 4, name: 'Gabriel Rocha', email: 'gabriel.r@example.com', phone: '(92) 97777-3337', document: '012.345.678-99', address: 'Rua do Comércio, 707, Manaus, AM', plan: 'Consórcio de Automóvel', status: 'Inativo' },
-  { id: 11, repId: 5, name: 'Mariana Azevedo', email: 'mariana.az@example.com', phone: '(48) 97777-3338', document: '111.222.333-44', address: 'Avenida Beira Mar Norte, 808, Florianópolis, SC', plan: 'Consórcio de Imóvel', status: 'Cliente Ativo', nextPayment: '18/09/2025' },
-  { id: 12, userId: 12, repId: 1, name: 'Ana Costa', email: 'ana.c@example.com', phone: '(11) 98765-1111', document: '555.666.777-88', address: 'Avenida Paulista, 909, São Paulo, SP', plan: 'Consórcio de Automóvel - R$ 80.000,00', status: 'Cliente Ativo', nextPayment: '15/08/2025' },
+  { id: 7, repId: 5, name: 'Roberto Dias', email: 'roberto.d@example.com', phone: '(71) 97777-3334', document: '789.012.345-66', address: 'Avenida Oceânica, 404, Salvador, BA', plan: 'Carro Novo', status: 'Cliente Ativo', nextPayment: '05/09/2025' },
+  { id: 8, repId: 3, name: 'Lucas Martins', email: 'lucas.m@example.com', phone: '(81) 97777-3335', document: '890.123.456-77', address: 'Rua da Moeda, 505, Recife, PE', plan: 'Sua Viagem', status: 'Cliente Ativo', nextPayment: '08/09/2025' },
+  { id: 9, repId: 2, name: 'Vanessa Costa', email: 'vanessa.c@example.com', phone: '(85) 97777-3336', document: '901.234.567-88', address: 'Avenida Beira Mar, 606, Fortaleza, CE', plan: 'Casa na Praia', status: 'Cliente Ativo', nextPayment: '12/09/2025' },
+  { id: 10, repId: 4, name: 'Gabriel Rocha', email: 'gabriel.r@example.com', phone: '(92) 97777-3337', document: '012.345.678-99', address: 'Rua do Comércio, 707, Manaus, AM', plan: 'Moto Zera', status: 'Inativo' },
+  { id: 11, repId: 5, name: 'Mariana Azevedo', email: 'mariana.az@example.com', phone: '(48) 97777-3338', document: '111.222.333-44', address: 'Avenida Beira Mar Norte, 808, Florianópolis, SC', plan: 'Meu Apê', status: 'Cliente Ativo', nextPayment: '18/09/2025' },
+  { id: 12, userId: 12, repId: 1, name: 'Ana Costa', email: 'ana.c@example.com', phone: '(11) 98765-1111', document: '555.666.777-88', address: 'Avenida Paulista, 909, São Paulo, SP', plan: 'Carro Novo', status: 'Cliente Ativo', nextPayment: '15/08/2025', contractStartDate: '2024-03-15' },
 ];
 
 const initialSales: Sale[] = [
-  { id: 1, repId: 1, clientName: 'João Silva', plan: 'Consórcio de Automóvel', value: 50000, date: '09/07/2025', status: SaleStatus.Approved, commissionPaid: true },
-  { id: 2, repId: 2, clientName: 'Carlos Pereira', plan: 'Consórcio de Imóvel', value: 350000, date: '05/07/2025', status: SaleStatus.Pending, commissionPaid: false },
-  { id: 3, repId: 3, clientName: 'Beatriz Lima', plan: 'Consórcio de Serviços', value: 15000, date: '02/07/2025', status: SaleStatus.Rejected, commissionPaid: false, rejectionReason: 'Score de crédito insuficiente.' },
-  { id: 4, repId: 4, clientName: 'Ricardo Alves', plan: 'Consórcio de Automóvel', value: 80000, date: '28/06/2025', status: SaleStatus.Approved, commissionPaid: true },
-  { id: 5, repId: 1, clientName: 'Fernanda Lima', plan: 'Consórcio de Imóvel', value: 450000, date: '15/07/2025', status: SaleStatus.Pending, commissionPaid: false },
-  { id: 6, repId: 2, clientName: 'Roberto Dias', plan: 'Consórcio de Automóvel', value: 95000, date: '14/07/2025', status: SaleStatus.Approved, commissionPaid: true },
-  { id: 7, repId: 3, clientName: 'Lucas Martins', plan: 'Consórcio de Serviços', value: 25000, date: '12/07/2025', status: SaleStatus.Approved, commissionPaid: true },
-  { id: 8, repId: 1, clientName: 'Vanessa Costa', plan: 'Consórcio de Imóvel', value: 600000, date: '11/07/2025', status: SaleStatus.Pending, commissionPaid: false },
-  { id: 9, repId: 4, clientName: 'Gabriel Rocha', plan: 'Consórcio de Automóvel', value: 120000, date: '10/07/2025', status: SaleStatus.Rejected, commissionPaid: false, rejectionReason: 'Documentação incompleta.' },
-  { id: 10, repId: 5, clientName: 'Mariana Azevedo', plan: 'Consórcio de Imóvel', value: 280000, date: '08/07/2025', status: SaleStatus.Pending, commissionPaid: false },
+  { id: 1, repId: 1, clientId: 2, plan: 'Carro Novo', value: 50000, date: '09/07/2025', status: SaleStatus.Approved, commissionPaid: true },
+  { id: 2, repId: 2, clientId: 3, plan: 'Meu Apê', value: 350000, date: '05/07/2025', status: SaleStatus.Pending, commissionPaid: false },
+  { id: 3, repId: 3, clientId: 4, plan: 'Sua Viagem', value: 15000, date: '02/07/2025', status: SaleStatus.Rejected, commissionPaid: false, rejectionReason: 'Score de crédito insuficiente.' },
+  { id: 4, repId: 4, clientId: 5, plan: 'Carro Novo', value: 80000, date: '28/06/2025', status: SaleStatus.Approved, commissionPaid: true },
+  { id: 5, repId: 1, clientId: 6, plan: 'Casa na Praia', value: 450000, date: '15/07/2025', status: SaleStatus.Pending, commissionPaid: false },
+  { id: 6, repId: 2, clientId: 7, plan: 'Carro Novo', value: 95000, date: '14/07/2025', status: SaleStatus.Approved, commissionPaid: true },
+  { id: 7, repId: 3, clientId: 8, plan: 'Sua Viagem', value: 25000, date: '12/07/2025', status: SaleStatus.Approved, commissionPaid: true },
+  { id: 8, repId: 1, clientId: 9, plan: 'Casa na Praia', value: 600000, date: '11/07/2025', status: SaleStatus.Pending, commissionPaid: false },
+  { id: 9, repId: 4, clientId: 10, plan: 'Moto Zera', value: 22000, date: '10/07/2025', status: SaleStatus.Rejected, commissionPaid: false, rejectionReason: 'Documentação incompleta.' },
+  { id: 10, repId: 5, clientId: 11, plan: 'Meu Apê', value: 280000, date: '08/07/2025', status: SaleStatus.Pending, commissionPaid: false },
+  { id: 11, repId: 1, clientId: 12, plan: 'Carro Novo', value: 80000, date: '15/03/2024', status: SaleStatus.Approved, commissionPaid: true },
 ];
 
 const initialPlans: Plan[] = [
@@ -139,7 +140,7 @@ const getNextId = <T extends {id: number}>(items: T[]): number => {
 
 // --- DATABASE SEEDING ---
 export const seedDatabase = () => {
-    if (!localStorage.getItem('seeded_v4')) { // Bump version to re-seed with new data structure
+    if (!localStorage.getItem('seeded_v5')) { // Bump version to re-seed with new data structure
         set('users', initialUsers);
         set('sales', initialSales);
         set('clients', initialClients);
@@ -147,7 +148,7 @@ export const seedDatabase = () => {
         set('plans', initialPlans);
         set('whatsapp_chats', initialWhatsAppChats);
         set('contract_template', DEFAULT_CONTRACT_TEMPLATE);
-        localStorage.setItem('seeded_v4', 'true');
+        localStorage.setItem('seeded_v5', 'true');
     }
 };
 

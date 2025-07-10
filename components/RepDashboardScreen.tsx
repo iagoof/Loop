@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSignKpiIcon, FileTextKpiIcon, UsersKpiIcon, TargetKpiIcon } from './icons';
 import * as db from '../services/database';
@@ -34,6 +34,7 @@ interface RecentActivity {
 const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     const [rep, setRep] = useState<Representative | null>(null);
     const [sales, setSales] = useState<Sale[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
 
     useEffect(() => {
         const currentRep = db.getRepresentativeByUserId(loggedInUser.id);
@@ -42,8 +43,13 @@ const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) 
             const allSales = db.getSales();
             const repSales = allSales.filter(s => s.repId === currentRep.id);
             setSales(repSales);
+            setClients(db.getClients());
         }
     }, [loggedInUser]);
+
+    const clientNameMap = useMemo(() => {
+        return new Map(clients.map(client => [client.id, client.name]));
+    }, [clients]);
 
     if (!rep) return <div className="flex-1 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
@@ -54,14 +60,14 @@ const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     const monthlySalesData = sales.filter(s => {
-        const saleDateParts = s.date.split('/');
-        const saleDate = new Date(Number(saleDateParts[2]), Number(saleDateParts[1]) - 1, Number(saleDateParts[0]));
+        const [day, month, year] = s.date.split('/').map(Number);
+        const saleDate = new Date(year, month - 1, day);
         return saleDate >= startOfMonth && s.status === SaleStatus.Approved;
     });
 
     const monthlySalesValue = monthlySalesData.reduce((sum, s) => sum + s.value, 0);
     const monthlyCommission = monthlySalesValue * (rep.commissionRate / 100);
-    const newClientsThisMonth = new Set(monthlySalesData.map(s => s.clientName)).size;
+    const newClientsThisMonth = new Set(monthlySalesData.map(s => s.clientId)).size;
     
     const goal = 200000; // Static goal for demo
     const goalPercentage = (monthlySalesValue / goal) * 100;
@@ -83,13 +89,14 @@ const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) 
 
 
     const recentActivities: RecentActivity[] = sales.map((s): RecentActivity => {
-       const saleDateParts = s.date.split('/');
-       const saleDate = new Date(Number(saleDateParts[2]), Number(saleDateParts[1]) - 1, Number(saleDateParts[0]));
+       const [day, month, year] = s.date.split('/').map(Number);
+       const saleDate = new Date(year, month - 1, day);
        const timeDiff = today.getTime() - saleDate.getTime();
        const daysAgo = Math.floor(timeDiff / (1000 * 3600 * 24));
+       const clientName = clientNameMap.get(s.clientId) || 'Cliente';
        return {
            type: 'Venda',
-           text: `Venda de ${formatCurrency(s.value)} para ${s.clientName} (${s.status})`,
+           text: `Venda de ${formatCurrency(s.value)} para ${clientName} (${s.status})`,
            time: daysAgo === 0 ? 'Hoje' : `${daysAgo}d atrás`,
            date: saleDate,
        };

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import * as db from '../services/database';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, CornerDownLeft } from 'lucide-react';
+import CodeMirror from '@uiw/react-codemirror';
+import { githubLight } from '@uiw/codemirror-theme-github';
+import { EditorView } from '@codemirror/view';
 
 const ContractTemplateScreen: React.FC = () => {
     const [template, setTemplate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [editorView, setEditorView] = useState<EditorView | null>(null);
 
     useEffect(() => {
         setTemplate(db.getContractTemplate());
@@ -20,6 +24,16 @@ const ContractTemplateScreen: React.FC = () => {
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2500);
         }, 500);
+    };
+
+    const handleInsertPlaceholder = (placeholder: string) => {
+        if (editorView) {
+            const { from, to } = editorView.state.selection.main;
+            editorView.dispatch({
+                changes: { from, to, insert: placeholder }
+            });
+            editorView.focus();
+        }
     };
 
     const placeholders = [
@@ -45,22 +59,30 @@ const ContractTemplateScreen: React.FC = () => {
             </header>
             <main className="flex-1 p-6 overflow-hidden bg-slate-50">
                 <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 flex flex-col h-full">
-                        <textarea
+                    <div className="lg:col-span-2 flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                         <CodeMirror
                             value={template}
-                            onChange={(e) => setTemplate(e.target.value)}
-                            className="w-full h-full p-4 border border-slate-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
-                            placeholder="Insira o texto do contrato aqui..."
+                            height="100%"
+                            theme={githubLight}
+                            extensions={[EditorView.lineWrapping]}
+                            onChange={(value) => setTemplate(value)}
+                            onCreateEditor={(view) => setEditorView(view)}
+                            className="h-full text-base flex-grow"
                         />
                     </div>
                     <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-y-auto">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Variáveis Disponíveis</h3>
-                        <p className="text-sm text-slate-500 mb-4">Use estas variáveis no seu modelo. Elas serão substituídas pelos dados reais do cliente e da venda.</p>
+                        <h3 className="text-lg font-bold text-slate-800 mb-2">Variáveis Disponíveis</h3>
+                        <p className="text-sm text-slate-500 mb-4">Clique para inserir uma variável no editor.</p>
                         <div className="space-y-2">
                             {placeholders.map(p => (
-                                <div key={p} className="bg-slate-100 p-2 rounded-md">
+                                <button
+                                    key={p}
+                                    onClick={() => handleInsertPlaceholder(p)}
+                                    className="w-full text-left bg-slate-100 p-2 rounded-md hover:bg-slate-200 transition-colors flex items-center justify-between group"
+                                >
                                     <code className="text-sm text-orange-700 font-semibold">{p}</code>
-                                </div>
+                                    <CornerDownLeft size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </button>
                             ))}
                         </div>
                     </div>

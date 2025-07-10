@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DownloadIcon, CheckCircleIcon, ArrowUpCircleIcon } from './icons';
-import { Client, User } from '../types';
+import { Client, User, Plan, Sale, SaleStatus } from '../types';
 import * as db from '../services/database';
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -20,11 +20,19 @@ const TransactionIcon: React.FC<{type: string}> = ({type}) => {
 
 const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     const [client, setClient] = useState<Client | null>(null);
+    const [clientSale, setClientSale] = useState<Sale | null>(null);
+    const [planDetails, setPlanDetails] = useState<Plan | null>(null);
 
     useEffect(() => {
         const clientProfile = db.getClientByUserId(loggedInUser.id);
         if (clientProfile) {
             setClient(clientProfile);
+            const sale = db.getSales().find(s => s.clientId === clientProfile.id && s.status === SaleStatus.Approved);
+            if (sale) {
+                setClientSale(sale);
+                const plan = db.getPlans().find(p => p.name === sale.plan);
+                setPlanDetails(plan || null);
+            }
         }
     }, [loggedInUser]);
 
@@ -38,16 +46,38 @@ const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
          </div>;
     }
     
+    if (!clientSale || !planDetails) {
+        return (
+             <div className="flex-1 flex flex-col overflow-hidden">
+                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800">Extrato Detalhado</h2>
+                        <p className="text-sm text-slate-500">Seu histórico de pagamentos e saldo devedor.</p>
+                    </div>
+                </header>
+                <main className="flex-1 p-6 flex items-center justify-center bg-slate-50">
+                    <p className="text-slate-500 text-center">Nenhum contrato ativo encontrado para gerar o extrato.</p>
+                </main>
+            </div>
+        )
+    }
+    
     // --- DYNAMIC DATA DERIVATION ---
-    const planValueMatch = client.plan.match(/R\$\s*([\d\.,]+)/);
-    const planTotalValue = planValueMatch ? parseFloat(planValueMatch[1].replace(/\./g, '').replace(',', '.')) : (client.plan !== 'Nenhum' ? 80000 : 0); // Fallback for simple plans
-    const termInMonths = 60; // Assuming a static term for demo
+    const planTotalValue = clientSale.value;
+    const termInMonths = planDetails.term;
     const installmentValue = planTotalValue / termInMonths;
 
-    // Simulate number of paid installments based on a fictional start date
-    const startDate = new Date(2024, 7, 15); // Aug 15, 2024
+    const [day, month, year] = clientSale.date.split('/').map(Number);
+    const startDate = new Date(year, month - 1, day);
+
     const today = new Date();
-    const monthsPaid = (today.getFullYear() - startDate.getFullYear()) * 12 + (today.getMonth() - startDate.getMonth());
+    let monthsPaid = (today.getFullYear() - startDate.getFullYear()) * 12 + (today.getMonth() - startDate.getMonth());
+    // If the sale was made this month, but before today's date, it counts as 1 month paid.
+    if (today.getFullYear() === startDate.getFullYear() && today.getMonth() === startDate.getMonth() && today.getDate() >= startDate.getDate()) {
+        monthsPaid = 1;
+    } else if (monthsPaid === 0 && today > startDate) {
+        monthsPaid = 1; // It has been less than a full month, but at least one payment is due/made.
+    }
     
     const totalPaid = installmentValue * monthsPaid;
     const balanceDue = planTotalValue - totalPaid;

@@ -13,7 +13,10 @@
     "react-dom": "^19.1.0",
     "lucide-react": "^0.525.0",
     "@google/genai": "^1.8.0",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "@uiw/react-codemirror": "4.23.0",
+    "@uiw/codemirror-theme-github": "4.23.0",
+    "@codemirror/view": "6.28.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

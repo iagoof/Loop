@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Sale, SaleStatus } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Sale, SaleStatus, Client } from '../types';
 import * as db from '../services/database';
 import ApprovalModal from './ApprovalModal';
 
@@ -12,20 +12,26 @@ const statusColors: Record<SaleStatus, string> = {
 
 const ContractsScreen: React.FC = () => {
   const [contracts, setContracts] = useState<Sale[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [filter, setFilter] = useState<SaleStatus | 'Todos'>('Todos');
   const [selectedContract, setSelectedContract] = useState<Sale | null>(null);
 
-  const fetchContracts = () => {
+  const fetchData = () => {
     setContracts(db.getSales());
+    setClients(db.getClients());
   };
 
   useEffect(() => {
-    fetchContracts();
+    fetchData();
   }, []);
+
+  const clientNameMap = useMemo(() => {
+    return new Map(clients.map(client => [client.id, client.name]));
+  }, [clients]);
 
   const handleUpdateStatus = (id: number, status: SaleStatus, reason?: string) => {
     db.updateSale(id, { status, rejectionReason: reason });
-    fetchContracts();
+    fetchData();
   };
 
   const filteredContracts = contracts.filter(c => filter === 'Todos' || c.status === filter);
@@ -71,7 +77,7 @@ const ContractsScreen: React.FC = () => {
                 <tbody>
                   {filteredContracts.map(c => (
                     <tr key={c.id} className="bg-white border-b hover:bg-slate-50">
-                      <td className="px-6 py-4 font-medium text-slate-900">{c.clientName}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">{clientNameMap.get(c.clientId) || 'N/A'}</td>
                       <td className="px-6 py-4">{c.plan}</td>
                       <td className="px-6 py-4">R$ {c.value.toLocaleString('pt-BR')}</td>
                       <td className="px-6 py-4">{c.date}</td>
@@ -97,6 +103,7 @@ const ContractsScreen: React.FC = () => {
         <ApprovalModal 
             isOpen={!!selectedContract}
             contract={selectedContract} 
+            clientName={clientNameMap.get(selectedContract.clientId) || ''}
             onClose={() => setSelectedContract(null)} 
             onUpdate={handleUpdateStatus} 
         />

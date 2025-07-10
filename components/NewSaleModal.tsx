@@ -1,33 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Sale } from '../types';
+import { Sale, Client, Plan } from '../types';
 import { XIcon } from './icons';
+import * as db from '../services/database';
 
 interface NewSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (saleData: Pick<Sale, 'clientName' | 'plan' | 'value' | 'date'>, id?: number) => void;
+  onSave: (saleData: Pick<Sale, 'clientId' | 'plan' | 'value' | 'date'>, id?: number) => void;
   initialData?: Sale | null;
+  repClients: Client[];
 }
 
-const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
-  const [clientName, setClientName] = useState('');
+const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSave, initialData, repClients }) => {
+  const [clientId, setClientId] = useState<string>('');
   const [plan, setPlan] = useState('');
   const [value, setValue] = useState('');
   const [date, setDate] = useState('');
+  const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
   
   useEffect(() => {
     if (isOpen) {
+        setAvailablePlans(db.getPlans());
         if (initialData) {
-            setClientName(initialData.clientName);
+            setClientId(String(initialData.clientId));
             setPlan(initialData.plan);
             setValue(initialData.value.toLocaleString('pt-BR'));
             setDate(initialData.date.split('/').reverse().join('-'));
         } else {
             // Reset form for new entry
-            setClientName('');
+            setClientId('');
             setPlan('');
             setValue('');
-            setDate('');
+            setDate(new Date().toISOString().split('T')[0]);
         }
     }
   }, [isOpen, initialData]);
@@ -35,9 +39,9 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSave, in
   if (!isOpen) return null;
 
   const handleSave = () => {
-    if(clientName && plan && value && date){
+    if(clientId && plan && value && date){
         onSave({
-            clientName,
+            clientId: Number(clientId),
             plan,
             value: parseFloat(value.replace(/\./g, '').replace(',', '.')),
             date: new Date(date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}),
@@ -63,15 +67,20 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSave, in
           <form className="space-y-6">
              <div>
                 <label htmlFor="client" className="block text-sm font-semibold text-slate-700 mb-1">Cliente</label>
-                <input type="text" id="client" name="client" placeholder="Nome completo do cliente" value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition" />
+                <select id="client" name="client" value={clientId} onChange={e => setClientId(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition">
+                    <option value="">Selecione um cliente</option>
+                    {repClients.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
             </div>
             <div>
               <label htmlFor="plan" className="block text-sm font-semibold text-slate-700 mb-1">Plano de Consórcio</label>
               <select id="plan" name="plan" value={plan} onChange={e => setPlan(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition">
                 <option value="">Selecione um plano</option>
-                <option>Consórcio de Imóvel</option>
-                <option>Consórcio de Automóvel</option>
-                <option>Consórcio de Serviços</option>
+                {availablePlans.map(p => (
+                    <option key={p.id} value={p.name}>{p.name} ({p.type})</option>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

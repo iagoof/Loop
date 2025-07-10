@@ -23,7 +23,7 @@ export enum SaleStatus {
 export interface Sale {
   id: number;
   repId: number;
-  clientName: string;
+  clientId: number;
   plan: string;
   value: number;
   date: string;
@@ -50,6 +50,7 @@ export interface Client {
   plan: string;
   status: 'Cliente Ativo' | 'Lead' | 'Inativo';
   nextPayment?: string;
+  contractStartDate?: string; // ISO String: 'YYYY-MM-DD'
 }
 
 export interface ChatMessage {

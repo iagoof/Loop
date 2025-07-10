@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sale, SaleStatus, User, UserRole, Representative } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Sale, SaleStatus, User, UserRole, Representative, Client } from '../types';
 import { PlusCircleIcon, MoreHorizontalIcon, DownloadIcon } from './icons';
 import NewSaleModal from './NewSaleModal';
 import * as db from '../services/database';
@@ -10,9 +10,9 @@ const statusColors: Record<SaleStatus, string> = {
   [SaleStatus.Rejected]: 'text-red-800 bg-red-100',
 };
 
-const SaleRow: React.FC<{ sale: Sale; onEdit: (sale: Sale) => void; onDownload: (sale: Sale) => void; }> = ({ sale, onEdit, onDownload }) => (
+const SaleRow: React.FC<{ sale: Sale; clientName: string; onEdit: (sale: Sale) => void; onDownload: (sale: Sale) => void; }> = ({ sale, clientName, onEdit, onDownload }) => (
   <tr className="bg-white border-b hover:bg-slate-50">
-    <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{sale.clientName}</td>
+    <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{clientName}</td>
     <td className="px-6 py-4">{sale.plan}</td>
     <td className="px-6 py-4">{`R$ ${sale.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</td>
     <td className="px-6 py-4">{sale.date}</td>
@@ -37,24 +37,30 @@ const SaleRow: React.FC<{ sale: Sale; onEdit: (sale: Sale) => void; onDownload: 
 
 const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
   const [sales, setSales] = useState<Sale[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [currentRep, setCurrentRep] = useState<Representative | null>(null);
 
   const fetchSales = () => {
      const allSales = db.getSales();
+     const allClients = db.getClients();
+     setClients(allClients);
+
      if (loggedInUser.role === UserRole.Representative) {
-        // Representatives see only their sales
         const repProfile = db.getRepresentativeByUserId(loggedInUser.id);
         if(repProfile) {
             setCurrentRep(repProfile);
             setSales(allSales.filter(s => s.repId === repProfile.id));
         }
      } else {
-        // Admins see all sales
         setSales(allSales);
      }
   }
+
+  const clientNameMap = useMemo(() => {
+    return new Map(clients.map(client => [client.id, client.name]));
+  }, [clients]);
 
   useEffect(() => {
     fetchSales();
@@ -70,7 +76,7 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     setIsModalOpen(false);
   }
 
-  const handleSaveSale = (saleData: Pick<Sale, 'clientName' | 'plan' | 'value' | 'date'>, id?: number) => {
+  const handleSaveSale = (saleData: Pick<Sale, 'clientId' | 'plan' | 'value' | 'date'>, id?: number) => {
     if (id) { // Editing existing sale
         db.updateSale(id, saleData);
     } else if (currentRep) { // Creating new sale for current rep
@@ -82,7 +88,7 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
   
   const handleDownloadContract = (sale: Sale) => {
     let template = db.getContractTemplate();
-    const client = db.getClients().find(c => c.name === sale.clientName);
+    const client = db.getClients().find(c => c.id === sale.clientId);
     const rep = db.getRepresentatives().find(r => r.id === sale.repId);
     
     if (!client) {
@@ -118,6 +124,11 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 };
+
+const repClients = useMemo(() => {
+    if(!currentRep) return [];
+    return clients.filter(c => c.repId === currentRep.id);
+}, [clients, currentRep]);
 
 
   return (
@@ -157,7 +168,7 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sales.map((sale) => <SaleRow key={sale.id} sale={sale} onEdit={handleOpenModal} onDownload={handleDownloadContract} />)}
+                  {sales.map((sale) => <SaleRow key={sale.id} sale={sale} clientName={clientNameMap.get(sale.clientId) || 'Cliente não encontrado'} onEdit={handleOpenModal} onDownload={handleDownloadContract} />)}
                 </tbody>
               </table>
             </div>
@@ -170,6 +181,7 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
         onClose={handleCloseModal}
         onSave={handleSaveSale}
         initialData={editingSale}
+        repClients={repClients}
       />
     </>
   );

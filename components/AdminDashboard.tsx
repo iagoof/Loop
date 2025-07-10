@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSignKpiIcon, FileTextKpiIcon, FileClockKpiIcon, UserCheckKpiIcon, MoreHorizontalIcon } from './icons';
 import * as db from '../services/database';
-import { Sale, Representative, SaleStatus } from '../types';
+import { Sale, Representative, SaleStatus, Client } from '../types';
 import ApprovalModal from './ApprovalModal';
 
 
@@ -38,16 +38,22 @@ const statusColors: { [key: string]: string } = {
 const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({setActiveScreen}) => {
     const [sales, setSales] = useState<Sale[]>([]);
     const [reps, setReps] = useState<Representative[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
     const [selectedContract, setSelectedContract] = useState<Sale | null>(null);
 
     const fetchData = () => {
         setSales(db.getSales());
         setReps(db.getRepresentatives());
+        setClients(db.getClients());
     }
 
     useEffect(() => {
         fetchData();
     }, []);
+
+    const clientNameMap = useMemo(() => {
+        return new Map(clients.map(client => [client.id, client.name]));
+    }, [clients]);
 
     const handleUpdateStatus = (id: number, status: SaleStatus, reason?: string) => {
         db.updateSale(id, { status, rejectionReason: reason });
@@ -187,7 +193,7 @@ const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({
                                     {recentContracts.map(c => (
                                         <tr key={c.id} className="border-b last:border-b-0 border-slate-200 hover:bg-slate-50">
                                             <td className="px-6 py-4 font-medium text-slate-900">
-                                                {c.clientName}
+                                                {clientNameMap.get(c.clientId) || 'Cliente não encontrado'}
                                                 <p className="text-xs text-slate-500 font-normal">por {reps.find(r => r.id === c.repId)?.name || 'N/A'}</p>
                                             </td>
                                             <td className="px-6 py-4">{formatCurrency(c.value)}</td>
@@ -222,7 +228,7 @@ const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({
                     </div>
                 </div>
             </main>
-            {selectedContract && <ApprovalModal isOpen={true} contract={selectedContract} onClose={() => setSelectedContract(null)} onUpdate={handleUpdateStatus} />}
+            {selectedContract && <ApprovalModal isOpen={true} contract={selectedContract} clientName={clientNameMap.get(selectedContract.clientId) || ''} onClose={() => setSelectedContract(null)} onUpdate={handleUpdateStatus} />}
         </div>
     );
 };

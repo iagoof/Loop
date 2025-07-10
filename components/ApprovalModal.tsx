@@ -4,13 +4,14 @@ import { XIcon, CheckCircleIcon, XCircleIcon } from './icons';
 
 interface ApprovalModalProps {
     contract: Sale;
+    clientName: string;
     isOpen: boolean;
     onClose: () => void;
     onUpdate: (id: number, status: SaleStatus, reason?: string) => void;
 }
 
-const ApprovalModal: React.FC<ApprovalModalProps> = ({ contract, isOpen, onClose, onUpdate }) => {
-    const [reason, setReason] = useState('');
+const ApprovalModal: React.FC<ApprovalModalProps> = ({ contract, clientName, isOpen, onClose, onUpdate }) => {
+    const [reason, setReason] = useState(contract.rejectionReason || '');
 
     if (!isOpen) return null;
 
@@ -34,7 +35,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({ contract, isOpen, onClose
                     <button onClick={onClose} className="text-slate-500 hover:text-slate-800"><XIcon /></button>
                 </div>
                 <div className="p-6 space-y-4">
-                    <p><strong>Cliente:</strong> {contract.clientName}</p>
+                    <p><strong>Cliente:</strong> {clientName}</p>
                     <p><strong>Plano:</strong> {contract.plan}</p>
                     <p><strong>Valor:</strong> R$ {contract.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                     <p><strong>Data da Venda:</strong> {contract.date}</p>
