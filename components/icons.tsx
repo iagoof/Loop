@@ -39,6 +39,8 @@ import {
   MessageCircle,
   ShieldCheck,
   FileSignature,
+  Menu,
+  ArrowLeft,
 } from 'lucide-react';
 
 export const LogoIcon = () => (
@@ -102,6 +104,8 @@ export const MailIcon = () => <Mail className="w-4 h-4 text-slate-400" />;
 export const LockIcon = () => <Lock className="w-4 h-4 text-slate-400" />;
 export const ArrowRightIcon = () => <ArrowRight className="w-6 h-6 ml-2" />;
 export const ShieldCheckIcon = () => <ShieldCheck className="w-6 h-6" />;
+export const MenuIcon = () => <Menu className="w-6 h-6" />;
+export const ArrowLeftIcon = () => <ArrowLeft className="w-5 h-5" />;
 
 
 // KPI Icons (Larger)

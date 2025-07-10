@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSignKpiIcon, FileTextKpiIcon, UsersKpiIcon, TargetKpiIcon } from './icons';
@@ -31,7 +32,7 @@ interface RecentActivity {
     date: Date;
 }
 
-const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
+export const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     const [rep, setRep] = useState<Representative | null>(null);
     const [sales, setSales] = useState<Sale[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
@@ -107,13 +108,13 @@ const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) 
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+            <header className="bg-white border-b border-slate-200 p-4 sm:px-6 flex-shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Meu Dashboard</h2>
                     <p className="text-sm text-slate-500">Seus KPIs de vendas e comissões, {rep.name}.</p>
                 </div>
             </header>
-            <main className="flex-1 p-6 overflow-y-auto bg-slate-50">
+            <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <KPICard icon={<DollarSignKpiIcon />} title="Vendas no Mês" value={formatCurrency(monthlySalesValue)} />
                     <KPICard icon={<FileTextKpiIcon />} title="Comissão no Mês" value={formatCurrency(monthlyCommission)} />
@@ -166,5 +167,3 @@ const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) 
         </div>
     );
 };
-
-export default RepDashboardScreen;

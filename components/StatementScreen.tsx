@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DownloadIcon, CheckCircleIcon, ArrowUpCircleIcon } from './icons';
 import { Client, User, Plan, Sale, SaleStatus } from '../types';
@@ -18,7 +19,7 @@ const TransactionIcon: React.FC<{type: string}> = ({type}) => {
     return <ArrowUpCircleIcon />;
 }
 
-const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
+export const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
     const [client, setClient] = useState<Client | null>(null);
     const [clientSale, setClientSale] = useState<Sale | null>(null);
     const [planDetails, setPlanDetails] = useState<Plan | null>(null);
@@ -49,7 +50,7 @@ const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
     if (!clientSale || !planDetails) {
         return (
              <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+                <header className="bg-white border-b border-slate-200 p-4 sm:px-6 flex-shrink-0">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-800">Extrato Detalhado</h2>
                         <p className="text-sm text-slate-500">Seu histórico de pagamentos e saldo devedor.</p>
@@ -75,7 +76,7 @@ const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
     // If the sale was made this month, but before today's date, it counts as 1 month paid.
     if (today.getFullYear() === startDate.getFullYear() && today.getMonth() === startDate.getMonth() && today.getDate() >= startDate.getDate()) {
         monthsPaid = 1;
-    } else if (monthsPaid === 0 && today > startDate) {
+    } else if (monthsPaid <= 0 && today > startDate) { // Use <= to catch same month cases
         monthsPaid = 1; // It has been less than a full month, but at least one payment is due/made.
     }
     
@@ -106,17 +107,17 @@ const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0 print:hidden">
-                <div>
+            <header className="bg-white border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:px-6 flex-shrink-0 print:hidden">
+                <div className='mb-2 sm:mb-0'>
                     <h2 className="text-2xl font-bold text-slate-800">Extrato Detalhado</h2>
                     <p className="text-sm text-slate-500">Seu histórico de pagamentos e saldo devedor.</p>
                 </div>
-                <button onClick={handlePrint} className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2">
+                <button onClick={handlePrint} className="bg-orange-600 text-white font-semibold px-3 sm:px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2">
                     <DownloadIcon />
-                    <span>Gerar PDF</span>
+                    <span className="hidden sm:inline">Gerar PDF</span>
                 </button>
             </header>
-            <main className="flex-1 p-6 overflow-y-auto bg-slate-50 print:bg-white print:p-0">
+            <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50 print:bg-white print:p-0">
                  <div className="print:p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 print:grid-cols-4">
                         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -163,5 +164,3 @@ const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
         </div>
     );
 };
-
-export default StatementScreen;

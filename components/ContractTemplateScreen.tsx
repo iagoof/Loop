@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import * as db from '../services/database';
 import { CheckCircle, CornerDownLeft } from 'lucide-react';
@@ -44,8 +45,8 @@ const ContractTemplateScreen: React.FC = () => {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
-            <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-                <div>
+            <header className="bg-white border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:px-6 flex-shrink-0">
+                <div className="mb-2 sm:mb-0">
                     <h2 className="text-2xl font-bold text-slate-800">Modelo de Contrato</h2>
                     <p className="text-sm text-slate-500">Edite o modelo padrão para geração de contratos.</p>
                 </div>
@@ -57,9 +58,9 @@ const ContractTemplateScreen: React.FC = () => {
                     {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : (saveSuccess ? <><CheckCircle size={20} className="mr-2"/> Salvo!</> : 'Salvar Modelo')}
                 </button>
             </header>
-            <main className="flex-1 p-6 overflow-hidden bg-slate-50">
+            <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50">
                 <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="lg:col-span-2 flex flex-col h-full min-h-[400px] lg:min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                          <CodeMirror
                             value={template}
                             height="100%"

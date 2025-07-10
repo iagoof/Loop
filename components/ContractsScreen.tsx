@@ -39,18 +39,18 @@ const ContractsScreen: React.FC = () => {
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+        <header className="bg-white border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:px-6 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">Gestão de Contratos</h2>
             <p className="text-sm text-slate-500">Visualize, aprove ou recuse contratos pendentes.</p>
           </div>
         </header>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center gap-4">
-              <h3 className="text-lg font-bold text-slate-800">Filtro de Status</h3>
-              <div className="flex gap-2">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <h3 className="text-lg font-bold text-slate-800 flex-shrink-0">Filtro de Status</h3>
+              <div className="flex gap-2 flex-wrap">
                 {(['Todos', ...Object.values(SaleStatus)]).map(status => (
                   <button 
                     key={status} 

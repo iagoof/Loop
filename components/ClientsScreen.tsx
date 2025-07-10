@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon, MailIcon } from './icons';
 import { getClientAnalysis } from '../services/geminiService';
@@ -111,18 +112,18 @@ const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-          <div>
+        <header className="bg-white border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:px-6 sm:py-0 sm:h-20 flex-shrink-0">
+          <div className="mb-2 sm:mb-0">
             <h2 className="text-2xl font-bold text-slate-800">Clientes</h2>
             <p className="text-sm text-slate-500">Sua carteira de clientes e leads.</p>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2">
+          <button onClick={() => setIsModalOpen(true)} className="bg-orange-600 text-white font-semibold px-3 sm:px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2">
             <PlusCircleIcon />
-            <span>Adicionar Cliente/Lead</span>
+            <span className="hidden sm:inline">Adicionar Cliente/Lead</span>
           </button>
         </header>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left text-slate-600">

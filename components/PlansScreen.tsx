@@ -67,21 +67,21 @@ const PlansScreen: React.FC = () => {
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-          <div>
+        <header className="bg-white border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:px-6 sm:py-0 sm:h-20 flex-shrink-0">
+          <div className="mb-2 sm:mb-0">
             <h2 className="text-2xl font-bold text-slate-800">Gestão de Planos</h2>
             <p className="text-sm text-slate-500">Crie e gerencie os planos de consórcio disponíveis.</p>
           </div>
           <button 
             onClick={() => handleOpenModal()}
-            className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2"
+            className="bg-orange-600 text-white font-semibold px-3 sm:px-4 py-2 rounded-lg hover:bg-orange-700 transition-transform transform hover:scale-105 flex items-center space-x-2"
           >
             <PlusCircleIcon />
-            <span>Criar Novo Plano</span>
+            <span className="hidden sm:inline">Criar Novo Plano</span>
           </button>
         </header>
-        <main className="flex-1 p-6 overflow-y-auto bg-slate-50">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {plans.map(plan => <PlanCard key={plan.id} plan={plan} onEdit={handleOpenModal} onDelete={handleDeletePlan} />)}
           </div>
         </main>
