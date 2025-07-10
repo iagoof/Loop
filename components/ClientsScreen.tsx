@@ -30,9 +30,7 @@ const ClientDetailPanel: React.FC<{ client: Client, onClose: () => void }> = ({ 
     }, [client]);
 
     const handleRegisterActivity = () => {
-        if(window.confirm(`Registrar uma nova atividade para ${client.name}?`)) {
-            alert("Atividade registrada com sucesso! (Funcionalidade de visualização de histórico em desenvolvimento).");
-        }
+        alert(`Atividade para ${client.name} registrada com sucesso! (O histórico de atividades é uma funcionalidade futura.)`);
     }
 
     return (

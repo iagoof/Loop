@@ -39,6 +39,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     // Optionally log the user in directly after registration
     onLogin(user);
   };
+  
+  const handleForgotPassword = (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert('Funcionalidade de recuperação de senha em desenvolvimento.');
+  };
 
 
   return (
@@ -114,7 +119,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-semibold text-orange-600 hover:text-orange-500">
+              <a href="#" onClick={handleForgotPassword} className="font-semibold text-orange-600 hover:text-orange-500">
                 Esqueceu a senha?
               </a>
             </div>

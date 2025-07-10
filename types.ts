@@ -29,6 +29,7 @@ export interface Sale {
   date: string;
   status: SaleStatus;
   commissionPaid: boolean;
+  rejectionReason?: string;
 }
 
 export interface NavItem {

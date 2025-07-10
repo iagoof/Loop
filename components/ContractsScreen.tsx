@@ -1,46 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sale, SaleStatus } from '../types';
-import { MoreHorizontalIcon, XIcon, CheckCircleIcon, XCircleIcon } from './icons';
 import * as db from '../services/database';
+import ApprovalModal from './ApprovalModal';
 
 const statusColors: Record<SaleStatus, string> = {
   [SaleStatus.Approved]: 'text-green-800 bg-green-100',
   [SaleStatus.Pending]: 'text-yellow-800 bg-yellow-100',
   [SaleStatus.Rejected]: 'text-red-800 bg-red-100',
 };
-
-const ApprovalModal: React.FC<{ contract: Sale, onClose: () => void, onUpdate: (id: number, status: SaleStatus) => void }> = ({ contract, onClose, onUpdate }) => {
-    return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-                <div className="flex justify-between items-center p-6 border-b border-slate-200">
-                    <h3 className="text-xl font-bold text-slate-800">Analisar Contrato</h3>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800"><XIcon /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <p><strong>Cliente:</strong> {contract.clientName}</p>
-                    <p><strong>Plano:</strong> {contract.plan}</p>
-                    <p><strong>Valor:</strong> R$ {contract.value.toLocaleString('pt-BR')}</p>
-                    <p><strong>Data da Venda:</strong> {contract.date}</p>
-                    <div>
-                        <label htmlFor="notes" className="block text-sm font-semibold text-slate-700 mb-1">Observações para a recusa (opcional)</label>
-                        <textarea id="notes" rows={3} placeholder="Ex: Documentação pendente." className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"></textarea>
-                    </div>
-                </div>
-                <div className="flex justify-end items-center p-6 bg-slate-50 border-t gap-4">
-                    <button onClick={() => { onUpdate(contract.id, SaleStatus.Rejected); onClose(); }} className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">
-                        <XCircleIcon /> Recusar
-                    </button>
-                    <button onClick={() => { onUpdate(contract.id, SaleStatus.Approved); onClose(); }} className="flex items-center gap-2 text-white font-semibold px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700">
-                        <CheckCircleIcon /> Aprovar
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 const ContractsScreen: React.FC = () => {
   const [contracts, setContracts] = useState<Sale[]>([]);
@@ -55,8 +23,8 @@ const ContractsScreen: React.FC = () => {
     fetchContracts();
   }, []);
 
-  const handleUpdateStatus = (id: number, status: SaleStatus) => {
-    db.updateSale(id, { status });
+  const handleUpdateStatus = (id: number, status: SaleStatus, reason?: string) => {
+    db.updateSale(id, { status, rejectionReason: reason });
     fetchContracts();
   };
 
@@ -111,9 +79,11 @@ const ContractsScreen: React.FC = () => {
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[c.status]}`}>{c.status}</span>
                       </td>
                       <td className="px-6 py-4">
-                        {c.status === SaleStatus.Pending && (
-                          <button onClick={() => setSelectedContract(c)} className="font-semibold text-orange-600 hover:underline">Analisar</button>
-                        )}
+                        
+                          <button onClick={() => setSelectedContract(c)} className="font-semibold text-orange-600 hover:underline">
+                            {c.status === SaleStatus.Pending ? 'Analisar' : 'Ver Detalhes'}
+                          </button>
+                        
                       </td>
                     </tr>
                   ))}
@@ -123,7 +93,14 @@ const ContractsScreen: React.FC = () => {
           </div>
         </main>
       </div>
-      {selectedContract && <ApprovalModal contract={selectedContract} onClose={() => setSelectedContract(null)} onUpdate={handleUpdateStatus} />}
+      {selectedContract && (
+        <ApprovalModal 
+            isOpen={!!selectedContract}
+            contract={selectedContract} 
+            onClose={() => setSelectedContract(null)} 
+            onUpdate={handleUpdateStatus} 
+        />
+      )}
     </>
   );
 };

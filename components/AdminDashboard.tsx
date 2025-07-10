@@ -4,8 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DollarSignKpiIcon, FileTextKpiIcon, FileClockKpiIcon, UserCheckKpiIcon, MoreHorizontalIcon } from './icons';
 import * as db from '../services/database';
 import { Sale, Representative, SaleStatus } from '../types';
-import ContractsScreen from './ContractsScreen'; // Cannot import, but can borrow modal
-import { XIcon, CheckCircleIcon, XCircleIcon } from './icons';
+import ApprovalModal from './ApprovalModal';
 
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -36,37 +35,6 @@ const statusColors: { [key: string]: string } = {
 };
 
 
-const ApprovalModal: React.FC<{ contract: Sale, onClose: () => void, onUpdate: (id: number, status: SaleStatus) => void }> = ({ contract, onClose, onUpdate }) => {
-    return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-                <div className="flex justify-between items-center p-6 border-b border-slate-200">
-                    <h3 className="text-xl font-bold text-slate-800">Analisar Contrato</h3>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800"><XIcon /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <p><strong>Cliente:</strong> {contract.clientName}</p>
-                    <p><strong>Plano:</strong> {contract.plan}</p>
-                    <p><strong>Valor:</strong> R$ {contract.value.toLocaleString('pt-BR')}</p>
-                    <p><strong>Data da Venda:</strong> {contract.date}</p>
-                    <p><strong>Status Atual:</strong> {contract.status}</p>
-                </div>
-                 {contract.status === SaleStatus.Pending && (
-                    <div className="flex justify-end items-center p-6 bg-slate-50 border-t gap-4">
-                        <button onClick={() => { onUpdate(contract.id, SaleStatus.Rejected); onClose(); }} className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700">
-                            <XCircleIcon /> Recusar
-                        </button>
-                        <button onClick={() => { onUpdate(contract.id, SaleStatus.Approved); onClose(); }} className="flex items-center gap-2 text-white font-semibold px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700">
-                            <CheckCircleIcon /> Aprovar
-                        </button>
-                    </div>
-                 )}
-            </div>
-        </div>
-    );
-};
-
-
 const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({setActiveScreen}) => {
     const [sales, setSales] = useState<Sale[]>([]);
     const [reps, setReps] = useState<Representative[]>([]);
@@ -81,8 +49,8 @@ const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({
         fetchData();
     }, []);
 
-    const handleUpdateStatus = (id: number, status: SaleStatus) => {
-        db.updateSale(id, { status });
+    const handleUpdateStatus = (id: number, status: SaleStatus, reason?: string) => {
+        db.updateSale(id, { status, rejectionReason: reason });
         fetchData(); // Refresh data
     };
 
@@ -254,7 +222,7 @@ const AdminDashboard: React.FC<{setActiveScreen: (screen: string) => void}> = ({
                     </div>
                 </div>
             </main>
-            {selectedContract && <ApprovalModal contract={selectedContract} onClose={() => setSelectedContract(null)} onUpdate={handleUpdateStatus} />}
+            {selectedContract && <ApprovalModal isOpen={true} contract={selectedContract} onClose={() => setSelectedContract(null)} onUpdate={handleUpdateStatus} />}
         </div>
     );
 };

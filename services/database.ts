@@ -45,13 +45,13 @@ const initialClients: Client[] = [
 const initialSales: Sale[] = [
   { id: 1, repId: 1, clientName: 'João Silva', plan: 'Consórcio de Automóvel', value: 50000, date: '09/07/2025', status: SaleStatus.Approved, commissionPaid: true },
   { id: 2, repId: 2, clientName: 'Carlos Pereira', plan: 'Consórcio de Imóvel', value: 350000, date: '05/07/2025', status: SaleStatus.Pending, commissionPaid: false },
-  { id: 3, repId: 3, clientName: 'Beatriz Lima', plan: 'Consórcio de Serviços', value: 15000, date: '02/07/2025', status: SaleStatus.Rejected, commissionPaid: false },
+  { id: 3, repId: 3, clientName: 'Beatriz Lima', plan: 'Consórcio de Serviços', value: 15000, date: '02/07/2025', status: SaleStatus.Rejected, commissionPaid: false, rejectionReason: 'Score de crédito insuficiente.' },
   { id: 4, repId: 4, clientName: 'Ricardo Alves', plan: 'Consórcio de Automóvel', value: 80000, date: '28/06/2025', status: SaleStatus.Approved, commissionPaid: true },
   { id: 5, repId: 1, clientName: 'Fernanda Lima', plan: 'Consórcio de Imóvel', value: 450000, date: '15/07/2025', status: SaleStatus.Pending, commissionPaid: false },
   { id: 6, repId: 2, clientName: 'Roberto Dias', plan: 'Consórcio de Automóvel', value: 95000, date: '14/07/2025', status: SaleStatus.Approved, commissionPaid: true },
   { id: 7, repId: 3, clientName: 'Lucas Martins', plan: 'Consórcio de Serviços', value: 25000, date: '12/07/2025', status: SaleStatus.Approved, commissionPaid: true },
   { id: 8, repId: 1, clientName: 'Vanessa Costa', plan: 'Consórcio de Imóvel', value: 600000, date: '11/07/2025', status: SaleStatus.Pending, commissionPaid: false },
-  { id: 9, repId: 4, clientName: 'Gabriel Rocha', plan: 'Consórcio de Automóvel', value: 120000, date: '10/07/2025', status: SaleStatus.Rejected, commissionPaid: false },
+  { id: 9, repId: 4, clientName: 'Gabriel Rocha', plan: 'Consórcio de Automóvel', value: 120000, date: '10/07/2025', status: SaleStatus.Rejected, commissionPaid: false, rejectionReason: 'Documentação incompleta.' },
   { id: 10, repId: 5, clientName: 'Mariana Azevedo', plan: 'Consórcio de Imóvel', value: 280000, date: '08/07/2025', status: SaleStatus.Pending, commissionPaid: false },
 ];
 
@@ -89,13 +89,13 @@ const getNextId = <T extends {id: number}>(items: T[]): number => {
 
 // --- DATABASE SEEDING ---
 export const seedDatabase = () => {
-    if (!localStorage.getItem('seeded_v2')) {
+    if (!localStorage.getItem('seeded_v3')) { // Bump version to re-seed with new data structure
         set('users', initialUsers);
         set('sales', initialSales);
         set('clients', initialClients);
         set('representatives', initialReps);
         set('plans', initialPlans);
-        localStorage.setItem('seeded_v2', 'true');
+        localStorage.setItem('seeded_v3', 'true');
     }
 };
 
@@ -132,7 +132,7 @@ export const registerUser = (data: Omit<User, 'id' | 'password_hash'> & { passwo
 
 // Sales
 export const getSales = (): Sale[] => get('sales', []);
-export const addSale = (newSaleData: Omit<Sale, 'id'|'status'|'commissionPaid'>): Sale => {
+export const addSale = (newSaleData: Omit<Sale, 'id'|'status'|'commissionPaid'|'rejectionReason'>): Sale => {
     const sales = getSales();
     const newSale: Sale = {
         ...newSaleData,

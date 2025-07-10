@@ -95,7 +95,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ loggedInUser }) => {
                             <div className="flex items-center space-x-4">
                                 <img src={profile.avatar} alt="Avatar" className="w-16 h-16 rounded-full" />
                                 <div>
-                                    <button className="text-sm font-semibold bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-200">Alterar Foto</button>
+                                    <button onClick={() => alert('Funcionalidade para alterar foto em desenvolvimento.')} className="text-sm font-semibold bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-200">Alterar Foto</button>
                                     <p className="text-xs text-slate-500 mt-1">PNG, JPG, GIF até 5MB.</p>
                                 </div>
                             </div>
@@ -111,7 +111,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ loggedInUser }) => {
                             </div>
                         </div>
                          <div className="p-6 bg-slate-50 border-t border-slate-200 rounded-b-xl flex justify-end gap-4">
-                            <button className="font-semibold text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-200 flex items-center"><Lock className="w-4 h-4 mr-2"/>Alterar Senha</button>
+                            <button onClick={() => alert('Funcionalidade para alterar senha em desenvolvimento.')} className="font-semibold text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-200 flex items-center"><Lock className="w-4 h-4 mr-2"/>Alterar Senha</button>
                             <button onClick={handleSaveProfile} className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700">Salvar Alterações</button>
                         </div>
                     </div>
