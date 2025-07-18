@@ -7,9 +7,9 @@ const getAi = (): GoogleGenAI => {
     if (!ai) {
         // The API key is expected to be available as an environment variable.
         // This is typically configured in the Vercel project settings or a local .env file.
-        const apiKey = process.env.API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            const errorMessage = "Gemini API key not found. Please ensure the API_KEY environment variable is set.";
+            const errorMessage = "Gemini API key not found. Please ensure the GEMINI_API_KEY environment variable is set.";
             console.error(errorMessage);
             throw new Error(errorMessage);
         }
