@@ -55,6 +55,7 @@ import {
   Heading2,
   List,
   ListOrdered,
+  ArrowUpDown as ArrowUpDownLucide,
 } from 'lucide-react';
 
 /**
@@ -119,13 +120,14 @@ export const XCircleIcon = () => <XCircle className="w-5 h-5 text-red-500" />;
 export const ArrowUpCircleIcon = () => <ArrowUpCircle className="w-5 h-5 text-blue-500" />;
 export const DownloadIcon = () => <Download className="w-5 h-5" />;
 export const PhoneIcon = () => <Phone className="w-4 h-4 mr-2" />;
-export const MailIcon = () => <Mail className="w-4 h-4 text-slate-400" />;
-export const LockIcon = () => <Lock className="w-4 h-4 text-slate-400" />;
+export const MailIcon = () => <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500" />;
+export const LockIcon = () => <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500" />;
 export const ArrowRightIcon = () => <ArrowRight className="w-6 h-6 ml-2" />;
 export const ShieldCheckIcon = () => <ShieldCheck className="w-6 h-6" />;
 export const MenuIcon = () => <Menu className="w-6 h-6" />;
 export const ArrowLeftIcon = () => <ArrowLeft className="w-5 h-5" />;
 export const BellIcon = () => <Bell className="w-5 h-5" />;
+export const ArrowUpDown = ArrowUpDownLucide;
 
 // --- Ícones do Editor de Texto ---
 export const BoldIcon = () => <Bold className={actionIconClass} />;

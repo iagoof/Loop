@@ -19,11 +19,11 @@ const PlaceholderScreen: React.FC<PlaceholderScreenProps> = ({ title, message })
         title={title}
         subtitle={message}
       />
-      <div className="flex-1 flex items-center justify-center bg-white rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex-1 flex items-center justify-center bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="text-center">
-            <Layers className="mx-auto h-12 w-12 text-slate-400" />
-            <h3 className="mt-2 text-lg font-semibold text-slate-800">Página em Construção</h3>
-            <p className="mt-1 text-sm text-slate-500">Esta funcionalidade estará disponível em breve.</p>
+            <Layers className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500" />
+            <h3 className="mt-2 text-lg font-semibold text-slate-800 dark:text-slate-100">Página em Construção</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Esta funcionalidade estará disponível em breve.</p>
         </div>
       </div>
     </div>

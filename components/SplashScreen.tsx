@@ -21,16 +21,16 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-center p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-black dark:to-slate-800 text-center p-8">
       <div className={`transition-all duration-1000 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
         <div className="flex justify-center items-center space-x-2 md:space-x-4 mb-6">
           <LogoIcon />
-          <h1 className="text-5xl md:text-6xl font-bold text-slate-800 tracking-tighter">Loop</h1>
+          <h1 className="text-5xl md:text-6xl font-bold text-slate-800 dark:text-slate-100 tracking-tighter">Loop</h1>
         </div>
-        <h2 className="text-2xl md:text-3xl font-semibold text-slate-700 mt-4 max-w-2xl mx-auto">
+        <h2 className="text-2xl md:text-3xl font-semibold text-slate-700 dark:text-slate-200 mt-4 max-w-2xl mx-auto">
           Soluções Financeiras para o seu Futuro.
         </h2>
-        <p className="max-w-xl mx-auto mt-4 text-base md:text-lg text-slate-500">
+        <p className="max-w-xl mx-auto mt-4 text-base md:text-lg text-slate-500 dark:text-slate-400">
           Simplificamos a gestão de consórcios, vendas e clientes em uma plataforma unificada, inteligente e fácil de usar.
         </p>
         <button

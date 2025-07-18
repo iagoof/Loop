@@ -154,7 +154,7 @@ export interface Notification {
     id: number;
     userId: number; // ID do usuário que deve receber a notificação.
     message: string;
-    link?: string; // Tela para onde o usuário deve ser levado ao clicar.
+    link?: any; // Tela para onde o usuário deve ser levado ao clicar. Pode ser string ou objeto.
     isRead: boolean;
     createdAt: string; // Data de criação no formato ISO 8601.
 }
@@ -174,4 +174,16 @@ export interface UserSettings {
         appUpdates: boolean;
     };
     theme: 'light' | 'dark' | 'system';
+}
+
+/**
+ * Representa uma atividade de contato com o cliente.
+ */
+export interface Activity {
+  id: number;
+  clientId: number;
+  repId: number;
+  type: 'Ligação' | 'Email' | 'Reunião' | 'Outro';
+  notes: string;
+  timestamp: string; // Data da atividade no formato ISO 8601.
 }

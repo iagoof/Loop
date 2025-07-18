@@ -24,14 +24,14 @@ const formatCurrencyShort = (value: number) => {
  * Componente reutilizável para exibir um cartão de KPI.
  */
 const KPICard: React.FC<{ icon: React.ReactNode; title: string; value: string; }> = ({ icon, title, value }) => (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+    <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex items-center">
             <div className="bg-orange-100 text-orange-600 w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 mr-4">
                 {icon}
             </div>
             <div>
-                <p className="text-sm font-semibold text-slate-500">{title}</p>
-                <p className="text-2xl font-bold text-slate-800">{value}</p>
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{title}</p>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
             </div>
         </div>
     </div>
@@ -49,6 +49,7 @@ export const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInU
     const [rep, setRep] = useState<Representative | null>(null);
     const [sales, setSales] = useState<Sale[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     // Busca os dados específicos do representante logado
     useEffect(() => {
@@ -60,6 +61,13 @@ export const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInU
             setSales(repSales);
             setClients(db.getClients());
         }
+
+        const observer = new MutationObserver(() => {
+            setIsDarkMode(document.documentElement.classList.contains('dark'));
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        setIsDarkMode(document.documentElement.classList.contains('dark'));
+        return () => observer.disconnect();
     }, [loggedInUser]);
 
     // Memoiza o mapa de nomes de clientes para performance
@@ -87,8 +95,9 @@ export const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInU
     const monthlyCommission = monthlySalesValue * (rep.commissionRate / 100);
     const newClientsThisMonth = new Set(monthlySalesData.map(s => s.clientId)).size;
     
-    const goal = 200000; // Meta estática para demonstração
-    const goalPercentage = (monthlySalesValue / goal) * 100;
+    // Usa a meta dinâmica do representante, que pode ser undefined
+    const goal = rep.goal;
+    const goalPercentage = (goal && goal > 0) ? (monthlySalesValue / goal) * 100 : 0;
 
     // Prepara os dados para o gráfico de vendas dos últimos 6 meses
     const salesChartData = sales
@@ -122,6 +131,15 @@ export const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInU
     })
     .sort((a,b) => b.date.getTime() - a.date.getTime())
     .slice(0, 3);
+    
+    const chartTickColor = isDarkMode ? '#94a3b8' : '#64748b';
+    const chartTooltipStyle = {
+        backgroundColor: isDarkMode ? 'rgb(30 41 59 / 0.9)' : '#fff',
+        border: '1px solid',
+        borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+        borderRadius: '0.5rem',
+        color: isDarkMode ? '#f1f5f9' : '#0f172a'
+    };
 
 
     return (
@@ -134,43 +152,51 @@ export const RepDashboardScreen: React.FC<{ loggedInUser: User }> = ({ loggedInU
                 <KPICard icon={<DollarSignKpiIcon />} title="Vendas no Mês" value={formatCurrency(monthlySalesValue)} />
                 <KPICard icon={<FileTextKpiIcon />} title="Comissão no Mês" value={formatCurrency(monthlyCommission)} />
                 <KPICard icon={<UsersKpiIcon />} title="Novos Clientes" value={String(newClientsThisMonth)} />
-                <KPICard icon={<TargetKpiIcon />} title="Meta Mensal" value={formatCurrency(goal)} />
+                <KPICard icon={<TargetKpiIcon />} title="Meta Mensal" value={goal ? formatCurrency(goal) : 'Não definida'} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Performance de Vendas (6 meses)</h3>
+                <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Performance de Vendas (6 meses)</h3>
                     <div style={{ height: 300 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={salesChartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="month" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                <YAxis tickFormatter={(value) => formatCurrencyShort(Number(value))} tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#334155' : '#e5e7eb'} vertical={false} />
+                                <XAxis dataKey="month" tick={{ fill: chartTickColor }} axisLine={false} tickLine={false} />
+                                <YAxis tickFormatter={(value) => formatCurrencyShort(Number(value))} tick={{ fill: chartTickColor }} axisLine={false} tickLine={false} />
+                                <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={chartTooltipStyle} />
                                 <Line type="monotone" dataKey="Vendas" stroke="#f97316" strokeWidth={3} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 mb-2">Progresso da Meta</h3>
-                        <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-semibold text-slate-600">{formatCurrency(monthlySalesValue)} de {formatCurrency(goal)}</span>
-                            <span className="text-sm font-bold text-orange-600">{goalPercentage.toFixed(0)}%</span>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2.5">
-                            <div className="bg-orange-500 h-2.5 rounded-full" style={{ width: `${goalPercentage}%` }}></div>
-                        </div>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Progresso da Meta</h3>
+                        {goal && goal > 0 ? (
+                            <>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{formatCurrency(monthlySalesValue)} de {formatCurrency(goal)}</span>
+                                    <span className="text-sm font-bold text-orange-600 dark:text-orange-500">{goalPercentage.toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
+                                    <div className="bg-orange-500 h-2.5 rounded-full" style={{ width: `${Math.min(goalPercentage, 100)}%` }}></div>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                                Nenhuma meta definida para este mês.
+                            </p>
+                        )}
                     </div>
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Atividades Recentes</h3>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Atividades Recentes</h3>
                         <ul className="space-y-4">
                            {recentActivities.map((act, i) => (
                                <li key={i} className="flex items-start">
                                    <div className={`w-2 h-2 rounded-full mt-1.5 mr-3 ${act.type === 'Venda' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
                                    <div>
-                                        <p className="text-sm text-slate-700">{act.text}</p>
-                                        <p className="text-xs text-slate-400">{act.time}</p>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300">{act.text}</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">{act.time}</p>
                                    </div>
                                </li>
                            ))}

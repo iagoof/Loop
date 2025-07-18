@@ -65,8 +65,8 @@ export const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser
         // Exibe uma mensagem se nenhum contrato ativo for encontrado
         if (!clientSale || !planDetails) {
             return (
-                <div className="flex-1 flex items-center justify-center bg-white rounded-xl border border-slate-200 shadow-sm h-full">
-                    <p className="text-slate-500 text-center">Nenhum contrato ativo encontrado para gerar o extrato.</p>
+                <div className="flex-1 flex items-center justify-center bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm h-full">
+                    <p className="text-slate-500 dark:text-slate-400 text-center">Nenhum contrato ativo encontrado para gerar o extrato.</p>
                 </div>
             )
         }
@@ -120,44 +120,44 @@ export const StatementScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser
             <div className="print:p-4">
                 {/* Resumo Financeiro */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 print:grid-cols-4">
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h4 className="font-semibold text-slate-500 mb-1">Total Amortizado</h4>
-                        <p className="text-2xl font-bold text-green-600">{formatCurrency(summary.totalPaid)}</p>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-1">Total Amortizado</h4>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(summary.totalPaid)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h4 className="font-semibold text-slate-500 mb-1">Saldo Devedor</h4>
-                        <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.balanceDue)}</p>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-1">Saldo Devedor</h4>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(summary.balanceDue)}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h4 className="font-semibold text-slate-500 mb-1">Próximo Vencimento</h4>
-                        <p className="text-2xl font-bold text-slate-800">{summary.nextPayment}</p>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-1">Próximo Vencimento</h4>
+                        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{summary.nextPayment}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h4 className="font-semibold text-slate-500 mb-1">Valor da Parcela</h4>
-                        <p className="text-2xl font-bold text-slate-800">{formatCurrency(summary.nextPaymentValue)}</p>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-1">Valor da Parcela</h4>
+                        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(summary.nextPaymentValue)}</p>
                     </div>
                 </div>
                 
                 {/* Lista de Transações */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">Últimas Transações</h3>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Últimas Transações</h3>
                     <ul className="space-y-4">
                         {transactions.length > 0 ? transactions.map(t => (
-                            <li key={t.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200 print:border-b">
+                            <li key={t.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 print:border-b">
                                 <div className="flex items-center">
                                     <div className="mr-4">
                                         <TransactionIcon type={t.type} />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-slate-800">{t.description}</p>
-                                        <p className="text-sm text-slate-500">{t.date}</p>
+                                        <p className="font-semibold text-slate-800 dark:text-slate-200">{t.description}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{t.date}</p>
                                     </div>
                                 </div>
-                                <p className={`font-bold text-lg ${t.type === 'payment' ? 'text-green-600' : 'text-red-600'}`}>
+                                <p className={`font-bold text-lg ${t.type === 'payment' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                                     {formatCurrency(t.value)}
                                 </p>
                             </li>
-                        )) : <p className="text-slate-500 text-center py-4">Nenhuma transação encontrada.</p>}
+                        )) : <p className="text-slate-500 dark:text-slate-400 text-center py-4">Nenhuma transação encontrada.</p>}
                     </ul>
                 </div>
              </div>

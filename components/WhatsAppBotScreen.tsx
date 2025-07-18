@@ -10,6 +10,7 @@ import * as db from '../services/database';
 import * as gemini from '../services/geminiService';
 import { WhatsAppChat, WhatsAppMessage, Client } from '../types';
 import { BotIcon, SendIcon, UserIcon, ShieldCheckIcon, MessageCircleIcon, ArrowLeftIcon } from './icons';
+import { useToast } from '../contexts/ToastContext';
 
 // Função utilitária para exibir tempo relativo
 const timeSince = (date: string) => {
@@ -19,231 +20,179 @@ const timeSince = (date: string) => {
     interval = seconds / 2592000;
     if (interval > 1) return Math.floor(interval) + " meses";
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " dias";
+    if (interval > 1) return Math.floor(interval) + "d";
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " horas";
+    if (interval > 1) return Math.floor(interval) + "h";
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " minutos";
-    return Math.floor(seconds) + " segundos atrás";
-}
+    if (interval > 1) return Math.floor(interval) + "min";
+    return "agora";
+};
 
 const WhatsAppBotScreen: React.FC = () => {
     const [chats, setChats] = useState<WhatsAppChat[]>([]);
-    const [activeChat, setActiveChat] = useState<WhatsAppChat | null>(null);
-    const [isLoading, setIsLoading] = useState(false); // Para o botão de simulação
-    const [adminMessage, setAdminMessage] = useState('');
-    const [typingChatId, setTypingChatId] = useState<number | null>(null);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+    const [message, setMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const { addToast } = useToast();
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    // Efeito para responsividade
+    const fetchData = () => {
+        setChats(db.getWhatsAppChats());
+        setClients(db.getClients());
+    };
+
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        fetchData();
+        const interval = setInterval(() => {
+            fetchData();
+        }, 10000); // Polling para novos chats/mensagens
+        return () => clearInterval(interval);
     }, []);
 
-    // Função para buscar e atualizar os chats
-    const fetchChats = () => {
-        const allChats = db.getWhatsAppChats();
-        setChats(allChats);
-        
-        if (activeChat) {
-            const refreshedChat = allChats.find(c => c.id === activeChat.id);
-            setActiveChat(refreshedChat || null);
-        } else if (!isMobile && allChats.length > 0) {
-            // Em desktop, seleciona automaticamente o primeiro chat
-            setActiveChat(allChats[0]);
-        }
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [selectedChatId, chats]);
+
+    const handleSelectChat = (chatId: number) => {
+        setSelectedChatId(chatId);
     };
 
-    useEffect(() => {
-        fetchChats();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isMobile]);
+    const handleSendMessage = async () => {
+        if (!message.trim() || !selectedChatId || isSending) return;
+        setIsSending(true);
 
-    // Rola para o final da conversa quando novas mensagens chegam
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [activeChat?.messages, typingChatId]);
+        const updatedChat = db.addWhatsAppMessage(selectedChatId, { sender: 'admin', text: message });
+        setMessage('');
 
+        if (updatedChat) {
+            setChats(prev => prev.map(c => c.id === selectedChatId ? updatedChat : c));
+        }
+        setIsSending(false);
+    };
+    
+    const handleSimulateMessage = () => {
+        const { chat: updatedChat, newMessage } = db.simulateIncomingWhatsAppMessage() || {};
+        if (updatedChat && newMessage) {
+            addToast(`Nova mensagem de ${updatedChat.clientName}`, 'info');
+            
+            // Otimisticamente atualiza a UI com a mensagem do cliente
+            setChats(prev => {
+                const existingChat = prev.find(c => c.id === updatedChat.id);
+                if (existingChat) {
+                    return prev.map(c => c.id === updatedChat.id ? updatedChat : c).sort((a,b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime());
+                }
+                return [updatedChat, ...prev];
+            });
 
-    // Simula a chegada de uma nova mensagem de cliente e a resposta da IA
-    const handleSimulateMessage = async () => {
-        setIsLoading(true);
-        const simulationResult = db.simulateIncomingWhatsAppMessage();
-
-        if (simulationResult) {
-            const { chat, newMessage } = simulationResult;
-            
-            // Atualiza o estado para mostrar a nova mensagem do cliente
-            let allChats = db.getWhatsAppChats();
-            const currentChatInDb = allChats.find(c => c.id === chat.id);
-            setChats(allChats);
-            setActiveChat(currentChatInDb || null);
-            setTypingChatId(chat.id); // Mostra o indicador "digitando..."
-            
-            // Busca os dados do cliente e chama a IA para gerar uma resposta
-            const client = db.getClients().find(c => c.id === chat.clientId);
-            const botReplyText = await gemini.getWhatsAppBotReply(newMessage.text, client, currentChatInDb?.messages || []);
-            
-            // Adiciona a resposta do bot ao banco de dados
-            db.addWhatsAppMessage(chat.id, { sender: 'bot', text: botReplyText });
-            
-            setTypingChatId(null); // Esconde o indicador "digitando..."
-            fetchChats(); // Atualiza a UI com a resposta do bot
+            // Trigger bot reply
+            triggerBotReply(updatedChat, newMessage.text);
         } else {
-            alert("Não foi possível simular mensagem. Verifique se existem clientes ativos.");
+            addToast('Não foi possível simular mensagem: sem clientes ativos.', 'error');
         }
-        setIsLoading(false);
     };
     
-    // Envia uma mensagem como administrador
-    const handleAdminSend = () => {
-        if (!adminMessage.trim() || !activeChat) return;
+    const triggerBotReply = async (chat: WhatsAppChat, clientMessage: string) => {
+        const client = clients.find(c => c.id === chat.clientId);
+        if (!client) return;
 
-        db.addWhatsAppMessage(activeChat.id, {
-            sender: 'admin',
-            text: adminMessage,
-        });
-        setAdminMessage('');
-        fetchChats();
-    };
+        // Adiciona o indicador "digitando..."
+        setChats(prev => prev.map(c => c.id === chat.id ? { ...c, isTyping: true } : c));
 
-    // Componente para a bolha de mensagem individual
-    const ChatMessageBubble: React.FC<{ msg: WhatsAppMessage }> = ({ msg }) => {
-        const messageContainerClasses = "flex items-start gap-3";
-        const bubbleClasses = "max-w-xl p-3 rounded-lg shadow-sm";
-        const timeClasses = "text-xs text-slate-400 text-right mt-1";
-
-        const senderIcon = () => {
-            switch(msg.sender) {
-                case 'bot': return <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0"><BotIcon /></div>;
-                case 'client': return <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 flex-shrink-0"><UserIcon /></div>;
-                case 'admin': return <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0"><ShieldCheckIcon /></div>;
+        setTimeout(async () => {
+            const replyText = await gemini.getWhatsAppBotReply(clientMessage, client, chat.messages);
+            const botReply = db.addWhatsAppMessage(chat.id, { sender: 'bot', text: replyText });
+            if (botReply) {
+                setChats(prev => prev.map(c => c.id === chat.id ? { ...botReply, isTyping: false } : c));
             }
-        };
-
-        const bubbleStyle = () => {
-             switch(msg.sender) {
-                case 'bot': return 'bg-slate-100 text-slate-800';
-                case 'client': return 'bg-green-100 text-slate-800';
-                case 'admin': return 'bg-blue-100 text-slate-800';
-            }
-        };
-
-        return (
-            <div className={`${messageContainerClasses} ${msg.sender !== 'client' ? 'justify-start' : 'justify-end'}`}>
-                {msg.sender !== 'client' && senderIcon()}
-                <div className={`${bubbleClasses} ${bubbleStyle()}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                    <p className={timeClasses}>{new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-                {msg.sender === 'client' && senderIcon()}
-            </div>
-        );
+        }, 1500 + Math.random() * 1000); // Delay para simular digitação
     };
     
-    // Componente para a lista de conversas (à esquerda em desktop, tela cheia em mobile)
-    const ChatList = (
-        <div className={`w-full md:w-1/3 xl:w-1/4 md:flex flex-col bg-white border-r border-slate-200 ${isMobile && activeChat ? 'hidden' : 'flex'}`}>
-            <header className="p-4 border-b border-slate-200 flex flex-col flex-shrink-0">
-                <h2 className="text-xl font-bold text-slate-800 mb-2">WhatsApp Bot</h2>
-                 <button
-                    onClick={handleSimulateMessage}
-                    disabled={isLoading}
-                    className="w-full bg-blue-500 text-white font-semibold py-2 rounded-lg hover:bg-blue-600 disabled:bg-slate-400 disabled:text-slate-600 flex items-center justify-center gap-2"
-                >
-                    {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><MessageCircleIcon /> Simular Nova Mensagem</>}
-                </button>
-            </header>
-            <div className='overflow-y-auto flex-1'>
-                {chats.map(chat => (
-                    <div 
-                        key={chat.id} 
-                        onClick={() => setActiveChat(chat)}
-                        className={`p-4 border-b border-slate-200 cursor-pointer flex items-center gap-4 ${activeChat?.id === chat.id ? 'bg-orange-50' : 'hover:bg-slate-50'}`}
-                    >
-                        <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 uppercase flex-shrink-0">
-                            {chat.clientName.charAt(0)}
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <div className="flex justify-between items-center">
-                                <p className="font-semibold text-slate-800 truncate">{chat.clientName}</p>
-                                <p className="text-xs text-slate-400 flex-shrink-0">{timeSince(chat.lastMessageTimestamp)}</p>
-                            </div>
-                            <p className="text-sm text-slate-500 truncate">
-                               {chat.id === typingChatId ? <span className="text-green-600">digitando...</span> : chat.messages[chat.messages.length - 1]?.text}
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-    
-    // Componente para a janela de chat ativa
-    const ActiveChatWindow = (
-        <div className={`w-full md:w-2/3 xl:w-3/4 flex flex-col bg-slate-50 ${isMobile && !activeChat ? 'hidden' : 'flex'}`}>
-            {activeChat ? (
-                <>
-                    <header className="h-16 bg-white border-b border-l border-slate-200 flex items-center p-4 flex-shrink-0">
-                        {isMobile && (
-                             <button onClick={() => setActiveChat(null)} className="mr-4 text-slate-600 p-1 rounded-full hover:bg-slate-100">
-                                 <ArrowLeftIcon />
-                             </button>
-                        )}
-                        <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 uppercase mr-3">
-                            {activeChat.clientName.charAt(0)}
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-slate-800">{activeChat.clientName}</h3>
-                            <p className="text-sm text-slate-500">{activeChat.clientPhone}</p>
-                        </div>
-                    </header>
-                    <main className="flex-1 p-6 overflow-y-auto space-y-4">
-                        {activeChat.messages.map(msg => <ChatMessageBubble key={msg.id} msg={msg} />)}
-                        {typingChatId === activeChat.id && (
-                            <div className="flex items-start gap-3 justify-start">
-                                 <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0"><BotIcon /></div>
-                                 <div className="p-3 rounded-lg shadow-sm bg-slate-200 text-slate-500 text-sm">
-                                    <span className="italic">Bot está digitando...</span>
-                                 </div>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </main>
-                    <footer className="bg-white p-4 border-t border-slate-200 flex-shrink-0">
-                        <div className="relative">
-                             <input
-                                type="text"
-                                value={adminMessage}
-                                onChange={(e) => setAdminMessage(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleAdminSend()}
-                                placeholder="Intervir como administrador..."
-                                className="w-full pl-4 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition bg-slate-50"
-                                aria-label="Digite sua mensagem como administrador"
-                            />
-                            <button onClick={handleAdminSend} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-orange-600 text-white hover:bg-orange-700 disabled:bg-slate-300 disabled:text-slate-500 transition" aria-label="Enviar mensagem">
-                                <SendIcon />
-                            </button>
-                        </div>
-                    </footer>
-                </>
-            ) : (
-                <div className="hidden md:flex flex-col items-center justify-center h-full text-center text-slate-500 bg-slate-50">
-                    <div className="text-slate-400"><MessageCircleIcon /></div>
-                    <h3 className="mt-2 text-lg font-semibold text-slate-800">Selecione uma conversa</h3>
-                    <p className="mt-1 text-sm">Ou simule uma nova mensagem para começar.</p>
-                </div>
-            )}
-        </div>
-    );
+    const selectedChat = chats.find(c => c.id === selectedChatId);
 
     return (
-        <div className="flex h-full">
-            {ChatList}
-            {ActiveChatWindow}
+        <div className="flex h-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
+            {/* Left Panel: Chat List */}
+            <aside className={`w-full md:w-1/3 lg:w-1/4 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-300 ${selectedChatId && 'hidden md:flex'}`}>
+                <header className="p-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Conversas</h2>
+                    <button onClick={handleSimulateMessage} className="text-sm text-orange-600 font-semibold mt-2">Simular Nova Mensagem &rarr;</button>
+                </header>
+                <div className="flex-1 overflow-y-auto">
+                    {chats.map(chat => (
+                        <div key={chat.id} onClick={() => handleSelectChat(chat.id)} className={`p-4 flex items-center cursor-pointer border-l-4 ${selectedChatId === chat.id ? 'bg-slate-100 dark:bg-slate-700/50 border-orange-500' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                            <div className="w-12 h-12 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center font-bold text-slate-600 dark:text-slate-200 mr-4">
+                                {chat.clientName.charAt(0)}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <div className="flex justify-between">
+                                    <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{chat.clientName}</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500">{timeSince(chat.lastMessageTimestamp)}</p>
+                                </div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{chat.isTyping ? <em className="text-green-500">digitando...</em> : chat.messages.slice(-1)[0]?.text}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </aside>
+
+            {/* Right Panel: Chat Window */}
+            <main className={`flex-1 flex flex-col transition-all duration-300 ${!selectedChatId && 'hidden md:flex'}`}>
+                {selectedChat ? (
+                    <>
+                        <header className="p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center flex-shrink-0">
+                            <button onClick={() => setSelectedChatId(null)} className="mr-4 md:hidden text-slate-600 dark:text-slate-300"><ArrowLeftIcon /></button>
+                            <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center font-bold text-slate-600 dark:text-slate-200 mr-3">
+                                {selectedChat.clientName.charAt(0)}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100">{selectedChat.clientName}</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{selectedChat.clientPhone}</p>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-100/50 dark:bg-slate-900/50">
+                            {selectedChat.messages.map(msg => (
+                                <div key={msg.id} className={`flex items-start gap-3 ${msg.sender !== 'client' ? 'justify-end' : ''}`}>
+                                    {msg.sender === 'client' && <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center flex-shrink-0"><UserIcon /></div>}
+                                    <div className={`max-w-md p-3 rounded-xl shadow-sm text-sm ${
+                                        msg.sender === 'client' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200' : 
+                                        msg.sender === 'bot' ? 'bg-green-100 dark:bg-green-900/50 text-slate-800 dark:text-slate-200' : 
+                                        'bg-blue-100 dark:bg-blue-900/50 text-slate-800 dark:text-slate-200'
+                                    }`}>
+                                        {msg.sender === 'bot' && <p className="text-xs font-bold text-green-700 dark:text-green-400 mb-1 flex items-center gap-1"><BotIcon /> Resposta Automática</p>}
+                                        {msg.sender === 'admin' && <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-1 flex items-center gap-1"><ShieldCheckIcon /> Atendimento</p>}
+                                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                                    </div>
+                                    {msg.sender !== 'client' && <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0 ${msg.sender === 'bot' ? 'bg-green-500' : 'bg-blue-500'}`}>{msg.sender === 'bot' ? <BotIcon /> : <ShieldCheckIcon />}</div>}
+                                </div>
+                            ))}
+                            {selectedChat.isTyping && (
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 text-white"><BotIcon /></div>
+                                    <div className="max-w-md p-3 rounded-xl bg-green-100 dark:bg-green-900/50 text-slate-800 dark:text-slate-200 text-sm italic">
+                                        digitando...
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        
+                        <footer className="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+                            <div className="relative">
+                                <input type="text" value={message} onChange={e => setMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSendMessage()} placeholder="Digite uma mensagem como administrador..." className="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200" disabled={isSending} />
+                                <button onClick={handleSendMessage} disabled={isSending || !message.trim()} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-orange-600 text-white hover:bg-orange-700 disabled:bg-slate-300 disabled:text-slate-500 transition"><SendIcon /></button>
+                            </div>
+                        </footer>
+                    </>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-500 dark:text-slate-400">
+                        <MessageCircleIcon />
+                        <h3 className="mt-4 text-xl font-bold text-slate-700 dark:text-slate-200">Selecione uma conversa</h3>
+                        <p>Escolha um chat na lista ao lado para ver as mensagens ou simule uma nova.</p>
+                    </div>
+                )}
+            </main>
         </div>
     );
 };

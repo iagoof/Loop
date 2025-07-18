@@ -43,9 +43,9 @@ const StrategicReports: React.FC = () => {
         title="Relatórios Estratégicos com IA"
         subtitle="Faça perguntas em linguagem natural sobre seus dados de negócio."
       />
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
         <div className="space-y-4">
-          <label htmlFor="report-query" className="block text-sm font-semibold text-slate-700">
+          <label htmlFor="report-query" className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
             Sua Pergunta:
           </label>
           <div className="flex gap-4">
@@ -55,7 +55,7 @@ const StrategicReports: React.FC = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ex: Qual produto foi mais rentável no último trimestre?"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
             />
             <button
               onClick={handleGenerateReport}
@@ -75,9 +75,9 @@ const StrategicReports: React.FC = () => {
 
         {/* Exibe a área de resultado apenas se estiver carregando ou se houver um relatório */}
         {(isLoading || report) && (
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Resultado da Análise</h3>
-            <div className="bg-slate-50 p-4 rounded-lg text-slate-800">
+          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Resultado da Análise</h3>
+            <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg text-slate-800 dark:text-slate-200">
               {isLoading ? <p>Analisando os dados...</p> : <p className="whitespace-pre-wrap">{report}</p>}
             </div>
           </div>

@@ -5,7 +5,7 @@
  * e modificação (setters) para todas as entidades do sistema (Usuários, Vendas, Clientes, etc.).
  * É uma solução robusta para demonstração e desenvolvimento frontend sem a necessidade de um backend real.
  */
-import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole, WhatsAppChat, WhatsAppMessage, Notification, UserSettings } from '../types';
+import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole, WhatsAppChat, WhatsAppMessage, Notification, UserSettings, Activity } from '../types';
 
 // --- NOTA DE SEGURANÇA DOS DADOS ---
 // Em uma aplicação real, NUNCA armazene senhas em texto plano.
@@ -84,6 +84,13 @@ const initialWhatsAppChats: WhatsAppChat[] = [
         ]
     }
 ];
+
+const initialActivities: Activity[] = [
+    { id: 1, clientId: 1, repId: 2, type: 'Ligação', notes: 'Cliente confirmou interesse no plano Casa na Praia. Agendamos uma nova conversa para a próxima semana.', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 2, clientId: 2, repId: 1, type: 'Email', notes: 'Enviei a documentação inicial para o cliente. Ele informou que irá analisar durante o fim de semana.', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 3, clientId: 1, repId: 2, type: 'Reunião', notes: 'Reunião inicial para apresentação dos planos. Cliente pareceu muito interessado.', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() }
+];
+
 
 const DEFAULT_CONTRACT_TEMPLATE = `CONTRATO DE ADESÃO A GRUPO DE CONSÓRCIO
 
@@ -167,7 +174,7 @@ const getNextId = <T extends {id: number}>(items: T[]): number => {
  * Utiliza uma flag com versionamento para permitir repopular com novos dados no futuro.
  */
 export const seedDatabase = () => {
-    if (!localStorage.getItem('seeded_v7')) { // Altere a versão para forçar a repopulação
+    if (!localStorage.getItem('seeded_v8')) { // Altere a versão para forçar a repopulação
         set('users', initialUsers);
         set('sales', initialSales);
         set('clients', initialClients);
@@ -176,7 +183,8 @@ export const seedDatabase = () => {
         set('whatsapp_chats', initialWhatsAppChats);
         set('contract_template', DEFAULT_CONTRACT_TEMPLATE);
         set('notifications', []); // Inicializa as notificações
-        localStorage.setItem('seeded_v7', 'true');
+        set('activities', initialActivities); // Adiciona atividades iniciais
+        localStorage.setItem('seeded_v8', 'true');
     }
 };
 
@@ -398,6 +406,10 @@ export const updateRepresentative = (id: number, updates: Partial<Representative
     }
     return updatedRep;
 };
+export const deleteRepresentative = (id: number): void => {
+    const reps = getRepresentatives();
+    set('representatives', reps.filter(r => r.id !== id));
+};
 export const getRepresentativeByUserId = (userId: number): Representative | undefined => {
     return getRepresentatives().find(r => r.userId === userId);
 };
@@ -437,6 +449,25 @@ export const addClient = (data: Omit<Client, 'id'>): Client => {
     const newClient: Client = { ...data, id: getNextId(clients) };
     set('clients', [newClient, ...clients]);
     return newClient;
+};
+export const updateClient = (id: number, updates: Partial<Client>): Client | undefined => {
+    const clients = getClients();
+    let updatedClient: Client | undefined;
+    const newClients = clients.map(c => {
+        if (c.id === id) {
+            updatedClient = { ...c, ...updates };
+            return updatedClient;
+        }
+        return c;
+    });
+    if (updatedClient) {
+        set('clients', newClients);
+    }
+    return updatedClient;
+};
+export const deleteClient = (id: number): void => {
+    const clients = getClients();
+    set('clients', clients.filter(c => c.id !== id));
 };
 export const getClientByUserId = (userId: number): Client | undefined => {
     return getClients().find(c => c.userId === userId);
@@ -567,3 +598,21 @@ export const simulateIncomingWhatsAppMessage = (): { chat: WhatsAppChat, newMess
 // --- API DO MODELO DE CONTRATO ---
 export const getContractTemplate = (): string => get('contract_template', DEFAULT_CONTRACT_TEMPLATE);
 export const setContractTemplate = (template: string): void => set('contract_template', template);
+
+// --- API de Atividades ---
+export const getActivities = (): Activity[] => get('activities', []);
+export const getActivitiesForClient = (clientId: number): Activity[] => {
+    return getActivities()
+        .filter(a => a.clientId === clientId)
+        .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+};
+export const addActivity = (data: Omit<Activity, 'id'>): Activity => {
+    const activities = getActivities();
+    const newActivity: Activity = {
+        ...data,
+        id: getNextId(activities),
+        timestamp: new Date().toISOString()
+    };
+    set('activities', [newActivity, ...activities]);
+    return newActivity;
+};

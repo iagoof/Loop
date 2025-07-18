@@ -10,7 +10,7 @@ import { User } from '../types';
 import * as db from '../services/database';
 import RegistrationModal from './RegistrationModal';
 import ForgotPasswordModal from './ForgotPasswordModal';
-
+import { useToast, ToastProvider } from '../contexts/ToastContext';
 
 interface LoginScreenProps {
   onLogin: (user: User) => void;
@@ -24,6 +24,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+  const { addToast } = useToast();
   
   // Ao montar, verifica se há um e-mail salvo e preenche o formulário
   useEffect(() => {
@@ -76,18 +77,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
   return (
     <>
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl border border-slate-200">
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
         <div className="flex flex-col items-center space-y-4">
           <LogoIcon />
-          <h1 className="text-3xl font-bold text-slate-800">Loop</h1>
-          <p className="text-slate-500">Bem-vindo(a) de volta!</p>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Loop</h1>
+          <p className="text-slate-500 dark:text-slate-400">Bem-vindo(a) de volta!</p>
         </div>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Email
               </label>
               <div className="relative">
@@ -102,14 +103,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+                  className="w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
                   placeholder="seu@email.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password"className="block text-sm font-semibold text-slate-700 mb-1">
+              <label htmlFor="password"className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Senha
               </label>
               <div className="relative">
@@ -124,7 +125,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+                  className="w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
                   placeholder="Sua senha"
                 />
               </div>
@@ -141,15 +142,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-slate-300 rounded"
+                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-slate-300 dark:border-slate-600 rounded"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900 dark:text-slate-200">
                 Lembrar-me
               </label>
             </div>
 
             <div className="text-sm">
-              <a href="#" onClick={handleForgotPassword} className="font-semibold text-orange-600 hover:text-orange-500">
+              <a href="#" onClick={handleForgotPassword} className="font-semibold text-orange-600 hover:text-orange-500 dark:text-orange-500 dark:hover:text-orange-400">
                 Esqueceu a senha?
               </a>
             </div>
@@ -169,9 +170,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             </button>
           </div>
         </form>
-        <div className="text-center text-sm text-slate-600">
+        <div className="text-center text-sm text-slate-600 dark:text-slate-400">
           Não tem uma conta?{' '}
-          <button onClick={() => setIsRegisterModalOpen(true)} className="font-semibold text-orange-600 hover:text-orange-500">
+          <button onClick={() => setIsRegisterModalOpen(true)} className="font-semibold text-orange-600 hover:text-orange-500 dark:text-orange-500 dark:hover:text-orange-400">
             Criar Conta
           </button>
         </div>
@@ -190,4 +191,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   );
 };
 
-export default LoginScreen;
+const LoginWithToast: React.FC<LoginScreenProps> = (props) => (
+  <ToastProvider>
+    <LoginScreen {...props} />
+  </ToastProvider>
+);
+
+export default LoginWithToast;

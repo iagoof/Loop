@@ -10,6 +10,7 @@ import { Plan } from '../types';
 import * as db from '../services/database';
 import NewPlanModal from './NewPlanModal';
 import ContentHeader from './ContentHeader';
+import { useToast } from '../contexts/ToastContext';
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR')}`;
 
@@ -17,19 +18,19 @@ const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR')}`;
  * Componente para exibir um único cartão de plano.
  */
 const PlanCard: React.FC<{ plan: Plan, onEdit: (plan: Plan) => void, onDelete: (id: number) => void }> = ({ plan, onEdit, onDelete }) => (
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col p-6 hover:shadow-lg transition-shadow">
+  <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col p-6 hover:shadow-lg transition-shadow dark:hover:border-slate-600">
     <div className="flex-grow">
-      <h3 className="text-xl font-bold text-slate-800">{plan.name}</h3>
-      <p className="text-sm font-semibold text-orange-600 mb-4">{plan.type}</p>
-      <div className="space-y-2 text-slate-600 text-sm">
+      <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{plan.name}</h3>
+      <p className="text-sm font-semibold text-orange-600 dark:text-orange-500 mb-4">{plan.type}</p>
+      <div className="space-y-2 text-slate-600 dark:text-slate-300 text-sm">
         <p><strong>Crédito:</strong> {formatCurrency(plan.valueRange[0])} a {formatCurrency(plan.valueRange[1])}</p>
         <p><strong>Prazo:</strong> Até {plan.term} meses</p>
         <p><strong>Taxa Adm.:</strong> {plan.adminFee}%</p>
       </div>
     </div>
-    <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-end space-x-2">
-        <button onClick={() => onEdit(plan)} className="p-2 text-slate-500 hover:text-orange-600 hover:bg-slate-100 rounded-lg" title="Editar Plano"><Edit2Icon /></button>
-        <button onClick={() => onDelete(plan.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Excluir Plano"><Trash2Icon /></button>
+    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end space-x-2">
+        <button onClick={() => onEdit(plan)} className="p-2 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg" title="Editar Plano"><Edit2Icon /></button>
+        <button onClick={() => onDelete(plan.id)} className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg" title="Excluir Plano"><Trash2Icon /></button>
     </div>
   </div>
 );
@@ -38,6 +39,7 @@ const PlansScreen: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const { addToast } = useToast();
 
   // Busca e atualiza a lista de planos
   const fetchPlans = () => {
@@ -63,8 +65,10 @@ const PlansScreen: React.FC = () => {
   const handleSavePlan = (planData: Omit<Plan, 'id'>, id?: number) => {
     if (id) {
         db.updatePlan(id, planData);
+        addToast('Plano atualizado com sucesso!', 'success');
     } else {
         db.addPlan(planData);
+        addToast('Plano criado com sucesso!', 'success');
     }
     fetchPlans(); // Atualiza a lista após salvar
   };
@@ -73,6 +77,7 @@ const PlansScreen: React.FC = () => {
   const handleDeletePlan = (id: number) => {
       if (window.confirm("Tem certeza que deseja excluir este plano? Esta ação não pode ser desfeita.")) {
           db.deletePlan(id);
+          addToast('Plano excluído com sucesso.', 'info');
           fetchPlans();
       }
   }

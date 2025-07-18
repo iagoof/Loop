@@ -5,7 +5,7 @@
  * renderizando a tela apropriada com base no estado atual.
  */
 import React, { useState, ReactNode, useEffect } from 'react';
-import { UserRole, User, Notification as NotificationType } from './types';
+import { UserRole, User, Notification as NotificationType, UserSettings } from './types';
 import Sidebar from './components/Sidebar';
 import SalesScreen from './components/SalesScreen';
 import ClientDashboard from './components/ClientDashboard';
@@ -30,14 +30,32 @@ import WhatsAppBotScreen from './components/WhatsAppBotScreen';
 import ContractTemplateScreen from './components/ContractTemplateScreen';
 import Header from './components/Header';
 import NotificationsPanel from './components/NotificationsPanel';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import Toast from './components/Toast';
 
-const App: React.FC = () => {
+type ActiveScreen = string | { screen: string, params: any };
+
+// Componente ToastContainer para renderizar as notificações
+const ToastContainer: React.FC = () => {
+    const { toasts, removeToast } = useToast();
+
+    return (
+        <div className="fixed top-20 right-4 z-[100] w-full max-w-sm">
+            {toasts.map(toast => (
+                <Toast key={toast.id} toast={toast} onRemove={removeToast} />
+            ))}
+        </div>
+    );
+};
+
+
+const AppContent: React.FC = () => {
     // Estado para controlar a exibição da tela de splash inicial
     const [showSplash, setShowSplash] = useState(true);
     // Estado para armazenar os dados do usuário logado
     const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
-    // Estado para controlar qual tela está sendo exibida
-    const [activeScreen, setActiveScreen] = useState<string>('');
+    // Estado para controlar qual tela está sendo exibida (pode ser string ou objeto com params)
+    const [activeScreen, setActiveScreen] = useState<ActiveScreen>('');
     // Estado para o menu da barra lateral em modo mobile (aberto/fechado)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     // Estado para detectar se a tela está em modo mobile
@@ -46,8 +64,9 @@ const App: React.FC = () => {
     const [notifications, setNotifications] = useState<NotificationType[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
-    // Estado para a URL do avatar do usuário
-    const [avatarUrl, setAvatarUrl] = useState('');
+    // Estado para as configurações do usuário, incluindo tema
+    const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+    const { addToast } = useToast();
     
     // Efeito para popular o banco de dados simulado na primeira inicialização
     useEffect(() => {
@@ -63,7 +82,7 @@ const App: React.FC = () => {
                 setUnreadCount(userNotifications.filter(n => !n.isRead).length);
                 
                 const settings = db.getUserSettings(loggedInUser.id);
-                setAvatarUrl(settings.profile.avatar);
+                setUserSettings(settings);
             };
 
             fetchUserData();
@@ -76,6 +95,35 @@ const App: React.FC = () => {
             return () => clearInterval(interval);
         }
     }, [loggedInUser]);
+
+    // Efeito para gerenciar o tema da aplicação (claro/escuro)
+    useEffect(() => {
+        if (!userSettings) return;
+
+        const root = window.document.documentElement;
+        const applyTheme = (theme: 'light' | 'dark') => {
+            root.classList.remove('light', 'dark');
+            root.classList.add(theme);
+        };
+        
+        if (userSettings.theme === 'dark') {
+            applyTheme('dark');
+        } else if (userSettings.theme === 'light') {
+            applyTheme('light');
+        } else { // System
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            applyTheme(mediaQuery.matches ? 'dark' : 'light');
+            
+            const handleChange = (e: MediaQueryListEvent) => {
+                if (db.getUserSettings(loggedInUser!.id).theme === 'system') {
+                    applyTheme(e.matches ? 'dark' : 'light');
+                }
+            };
+
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+    }, [userSettings, loggedInUser]);
 
     // Efeito para detectar redimensionamento da janela e ajustar o modo mobile
     useEffect(() => {
@@ -140,10 +188,14 @@ const App: React.FC = () => {
 
     const handleSettingsSaved = () => {
         if (loggedInUser) {
-            const settings = db.getUserSettings(loggedInUser.id);
-            setAvatarUrl(settings.profile.avatar);
+            const newSettings = db.getUserSettings(loggedInUser.id);
+            setUserSettings(newSettings);
+            addToast('Configurações salvas com sucesso!', 'success');
         }
     };
+
+    const currentScreenName = typeof activeScreen === 'string' ? activeScreen : activeScreen.screen;
+    const screenParams = typeof activeScreen === 'object' ? activeScreen.params : {};
 
     // Mapeamento de chaves de tela para os componentes React correspondentes
     const screens: Record<string, ReactNode> = {
@@ -151,7 +203,7 @@ const App: React.FC = () => {
         admin_dashboard: <AdminDashboard setActiveScreen={setActiveScreen} />,
         representatives: <RepresentativesScreen />,
         plans: <PlansScreen />,
-        contracts: <ContractsScreen />,
+        contracts: <ContractsScreen initialFilter={screenParams.filter || 'Todos'} />,
         commissions: <CommissionsScreen />,
         contract_template: <ContractTemplateScreen />,
         reports: <StrategicReports />,
@@ -180,6 +232,9 @@ const App: React.FC = () => {
     const handleLogout = () => {
         setLoggedInUser(null);
         setActiveScreen('login');
+        // Ao deslogar, reverte para o tema claro padrão
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
     };
     
     const handleContinueFromSplash = () => {
@@ -200,15 +255,15 @@ const App: React.FC = () => {
     }
 
     // Se não houver usuário logado, renderiza a tela de login
-    if (!loggedInUser) {
+    if (!loggedInUser || !userSettings) {
         return <LoginScreen onLogin={handleLogin} />;
     }
-
+    
     return (
-        <div className="fixed inset-0 flex bg-slate-50">
+        <div className="fixed inset-0 flex bg-slate-50 dark:bg-slate-900">
             <Sidebar 
                 userRole={loggedInUser.role} 
-                activeScreen={activeScreen} 
+                activeScreen={currentScreenName} 
                 setActiveScreen={setActiveScreen} 
                 onLogout={handleLogout}
                 isMobile={isMobile}
@@ -220,12 +275,12 @@ const App: React.FC = () => {
                     isMobile={isMobile}
                     onToggleSidebar={() => setIsSidebarOpen(true)}
                     user={loggedInUser}
-                    title={screenTitles[activeScreen] || 'Loop'}
+                    title={screenTitles[currentScreenName] || 'Loop'}
                     unreadCount={unreadCount}
                     onToggleNotifications={handleToggleNotifications}
                     onLogout={handleLogout}
                     onNavigate={setActiveScreen}
-                    avatarUrl={avatarUrl}
+                    avatarUrl={userSettings.profile.avatar}
                 />
                  {isNotificationsPanelOpen && (
                     <NotificationsPanel
@@ -237,12 +292,20 @@ const App: React.FC = () => {
                         }}
                     />
                 )}
+                 <ToastContainer />
                 <main className="flex-1 overflow-y-auto">
-                    {screens[activeScreen] || <PlaceholderScreen title="Página não encontrada" message="A tela que você buscou não existe." />}
+                    {screens[currentScreenName] || <PlaceholderScreen title="Página não encontrada" message="A tela que você buscou não existe." />}
                 </main>
             </div>
         </div>
     );
 };
+
+const App: React.FC = () => (
+    <ToastProvider>
+        <AppContent />
+    </ToastProvider>
+);
+
 
 export default App;

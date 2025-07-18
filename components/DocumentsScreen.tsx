@@ -52,20 +52,20 @@ const DocumentsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
             subtitle="Baixe seu contrato e outros arquivos importantes."
         />
       
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-          <ul className="divide-y divide-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <ul className="divide-y divide-slate-200 dark:divide-slate-700">
             {documents.map(doc => (
-              <li key={doc.id} className="flex items-center justify-between p-6 hover:bg-slate-50">
+              <li key={doc.id} className="flex items-center justify-between p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div>
-                  <p className={`font-semibold ${!doc.available ? 'text-slate-400' : 'text-slate-800'}`}>{doc.name}</p>
-                  <p className="text-sm text-slate-500">
+                  <p className={`font-semibold ${!doc.available ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>{doc.name}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Disponibilizado em: {doc.date} | {doc.type} | {doc.size}
                   </p>
                 </div>
                 <button
                   onClick={() => doc.available && handleDownload(doc.name)}
                   disabled={!doc.available}
-                  className="flex items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-800 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-800 dark:text-orange-500 dark:hover:text-orange-400 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed"
                 >
                   <DownloadIcon />
                   Baixar

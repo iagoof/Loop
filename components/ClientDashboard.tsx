@@ -70,10 +70,10 @@ const Chatbot: React.FC<{ client: Client }> = ({ client }) => {
     };
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[600px] mt-6">
-            <div className="p-4 border-b border-slate-200 flex items-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col h-[600px] mt-6">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center">
                 <BotIcon />
-                <h3 className="text-lg font-bold text-slate-800 ml-3">Assistente Virtual</h3>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 ml-3">Assistente Virtual</h3>
             </div>
             <div className="flex-1 p-6 overflow-y-auto space-y-4">
                 {messages.map((msg, index) => (
@@ -83,11 +83,11 @@ const Chatbot: React.FC<{ client: Client }> = ({ client }) => {
                                 <BotIcon />
                             </div>
                         )}
-                        <div className={`max-w-md p-3 rounded-lg ${msg.sender === 'ai' ? 'bg-slate-100 text-slate-800' : 'bg-orange-600 text-white'}`}>
+                        <div className={`max-w-md p-3 rounded-lg ${msg.sender === 'ai' ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200' : 'bg-orange-600 text-white'}`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                         </div>
                          {msg.sender === 'user' && (
-                            <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-300 flex-shrink-0">
                                 <UserIcon />
                             </div>
                         )}
@@ -95,7 +95,7 @@ const Chatbot: React.FC<{ client: Client }> = ({ client }) => {
                 ))}
                  <div ref={messagesEndRef} />
             </div>
-            <div className="p-4 border-t border-slate-200">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700">
                 <div className="relative">
                     <input
                         type="text"
@@ -103,7 +103,7 @@ const Chatbot: React.FC<{ client: Client }> = ({ client }) => {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                         placeholder="Quando vence minha parcela?"
-                        className="w-full pl-4 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+                        className="w-full pl-4 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200"
                         disabled={isLoading}
                         aria-label="Digite sua mensagem"
                     />
@@ -147,17 +147,17 @@ const ClientDashboard: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
                 subtitle={`Bem-vindo(a) de volta, ${client.name}!`}
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-slate-500 mb-2">Seu Plano</h4>
-                    <p className="text-2xl font-bold text-slate-800">{client.plan}</p>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-2">Seu Plano</h4>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{client.plan}</p>
                 </div>
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-slate-500 mb-2">Próximo Vencimento</h4>
-                    <p className="text-2xl font-bold text-slate-800">{client.nextPayment || 'N/A'}</p>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-2">Próximo Vencimento</h4>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{client.nextPayment || 'N/A'}</p>
                 </div>
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 className="font-semibold text-slate-500 mb-2">Próxima Assembleia</h4>
-                    <p className="text-2xl font-bold text-slate-800">25/07/2025</p>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h4 className="font-semibold text-slate-500 dark:text-slate-400 mb-2">Próxima Assembleia</h4>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">25/07/2025</p>
                 </div>
             </div>
             <Chatbot client={client} />

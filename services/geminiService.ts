@@ -6,7 +6,7 @@
  * cliente e relatórios estratégicos.
  */
 import { GoogleGenAI, Type } from "@google/genai";
-import { Client, ChatMessage, WhatsAppMessage, Sale, Representative } from "../types";
+import { Client, ChatMessage, WhatsAppMessage, Sale, Representative, Activity } from "../types";
 
 // Instância singleton do cliente da API
 let ai: GoogleGenAI | null = null;
@@ -168,16 +168,36 @@ export const getContractAnalysis = async (
 };
 
 /**
- * Gera uma análise de perfil de cliente com base em um histórico.
- * @param {string} clientHistory - Um resumo do histórico de interações do cliente.
+ * Gera uma análise de perfil de cliente com base em seu histórico de atividades.
+ * @param client O objeto do cliente.
+ * @param activities Uma lista de atividades registradas para o cliente.
  * @returns {Promise<string>} A análise gerada pela IA.
  */
-export const getClientAnalysis = async (clientHistory: string): Promise<string> => {
+export const getClientAnalysis = async (client: Client, activities: Activity[]): Promise<string> => {
     try {
         const googleAi = getAi();
+        const history = activities
+            .map(act => `Em ${new Date(act.timestamp).toLocaleDateString('pt-BR')}, tipo: ${act.type}, notas: "${act.notes}"`)
+            .join('\n');
+            
+        const prompt = `
+            Baseado nos seguintes dados e histórico de interações com o cliente, gere um resumo conciso do perfil e sugira a próxima ação de venda mais apropriada. 
+            Seja breve, direto e use uma linguagem profissional.
+
+            **Dados do Cliente:**
+            - Nome: ${client.name}
+            - Status: ${client.status}
+            - Plano de Interesse/Atual: ${client.plan}
+
+            **Histórico de Interações:**
+            ${history || "Nenhuma atividade registrada."}
+            
+            **Sua Análise:**
+        `;
+
         const response = await googleAi.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: `Baseado no seguinte histórico de interações com o cliente, gere um resumo do perfil e sugira a próxima ação de venda mais apropriada. Seja breve e direto. Histórico: "${clientHistory}"`,
+            contents: prompt,
         });
         return response.text;
     } catch (error) {
