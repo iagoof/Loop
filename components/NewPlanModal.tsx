@@ -1,4 +1,9 @@
-
+/**
+ * @file Modal para Adicionar/Editar Plano
+ * @description Este componente fornece um formulário modal para criar ou
+ * editar um plano de consórcio. Ele gerencia o estado de todos os campos
+ * do plano e é preenchido com dados iniciais quando em modo de edição.
+ */
 import React, { useState, useEffect } from 'react';
 import { Plan } from '../types';
 import { XIcon } from './icons';
@@ -7,10 +12,11 @@ interface NewPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (newPlan: Omit<Plan, 'id'>, id?: number) => void;
-  initialData?: Plan | null;
+  initialData?: Plan | null; // Dados para preencher o formulário em modo de edição
 }
 
 const NewPlanModal: React.FC<NewPlanModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
+    // Estados para cada campo do formulário
     const [name, setName] = useState('');
     const [type, setType] = useState<'Imóvel' | 'Automóvel' | 'Serviços'>('Automóvel');
     const [minVal, setMinVal] = useState('');
@@ -18,16 +24,17 @@ const NewPlanModal: React.FC<NewPlanModalProps> = ({ isOpen, onClose, onSave, in
     const [term, setTerm] = useState('');
     const [adminFee, setAdminFee] = useState('');
 
+    // Efeito para popular ou resetar o formulário quando o modal abre
     useEffect(() => {
         if (isOpen) {
-            if (initialData) {
+            if (initialData) { // Modo de edição
                 setName(initialData.name);
                 setType(initialData.type);
                 setMinVal(String(initialData.valueRange[0]));
                 setMaxVal(String(initialData.valueRange[1]));
                 setTerm(String(initialData.term));
                 setAdminFee(String(initialData.adminFee));
-            } else {
+            } else { // Modo de adição
                 setName('');
                 setType('Automóvel');
                 setMinVal('');
@@ -48,7 +55,7 @@ const NewPlanModal: React.FC<NewPlanModalProps> = ({ isOpen, onClose, onSave, in
                 valueRange: [Number(minVal), Number(maxVal)],
                 term: Number(term),
                 adminFee: Number(adminFee),
-            }, initialData?.id);
+            }, initialData?.id); // Passa o ID se estiver editando
             onClose();
         } else {
             alert("Por favor, preencha todos os campos.");
@@ -56,13 +63,13 @@ const NewPlanModal: React.FC<NewPlanModalProps> = ({ isOpen, onClose, onSave, in
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50" aria-modal="true" role="dialog">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
                 <div className="flex justify-between items-center p-6 border-b border-slate-200">
                     <h3 className="text-xl font-bold text-slate-800">{initialData ? 'Editar Plano' : 'Criar Novo Plano'}</h3>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800"><XIcon /></button>
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800" aria-label="Fechar modal"><XIcon /></button>
                 </div>
-                <form className="p-6 space-y-4">
+                <form className="p-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Nome do Plano</label>
                         <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Ex: Meu Carro Novo" />

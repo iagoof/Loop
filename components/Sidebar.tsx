@@ -1,4 +1,10 @@
-
+/**
+ * @file Componente da Barra de Navegação Lateral (Sidebar)
+ * @description Renderiza a navegação principal da aplicação. É responsivo,
+ * adaptando-se para um menu fixo em desktops e um menu sobreposto (overlay)
+ * em dispositivos móveis. O conteúdo exibido é dinâmico, baseado no papel
+ * (role) do usuário logado.
+ */
 import React from 'react';
 import { NavItem, UserRole } from '../types';
 import {
@@ -18,7 +24,6 @@ import {
   DownloadCloudIcon,
   MessageCircleIcon,
   FileSignatureIcon,
-  XIcon,
 } from './icons';
 
 interface SidebarProps {
@@ -26,11 +31,12 @@ interface SidebarProps {
   activeScreen: string;
   setActiveScreen: (screen: string) => void;
   onLogout: () => void;
-  isMobile: boolean;
-  isOpen: boolean;
+  isMobile: boolean; // Indica se a visualização é para dispositivos móveis
+  isOpen: boolean;   // Controla a visibilidade do menu em modo mobile
   setIsOpen: (open: boolean) => void;
 }
 
+// Mapeia os itens de navegação para cada papel de usuário
 const navItems: Record<UserRole, NavItem[]> = {
   [UserRole.Admin]: [
     { label: 'Dashboard', icon: <DashboardIcon />, screen: 'admin_dashboard' },
@@ -56,19 +62,22 @@ const navItems: Record<UserRole, NavItem[]> = {
   ],
 };
 
+/**
+ * Conteúdo interno da Sidebar, reutilizado nas versões desktop e mobile.
+ */
 const SidebarContent: React.FC<Omit<SidebarProps, 'isMobile' | 'isOpen' | 'setIsOpen'>> = ({ userRole, activeScreen, setActiveScreen, onLogout }) => {
   const currentNavItems = navItems[userRole];
 
   return (
     <>
-      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <LogoIcon />
           <h1 className="text-xl font-bold text-slate-800">Loop</h1>
         </div>
       </div>
       
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {currentNavItems.map((item) => (
           <a
             key={item.screen}
@@ -89,7 +98,8 @@ const SidebarContent: React.FC<Omit<SidebarProps, 'isMobile' | 'isOpen' | 'setIs
         ))}
       </nav>
 
-      <div className="px-4 py-4 border-t border-slate-200">
+      {/* Seção inferior com Configurações e Sair */}
+      <div className="px-4 py-4 border-t border-slate-200 flex-shrink-0">
         <a
           href="#"
           onClick={(e) => {
@@ -122,31 +132,36 @@ const SidebarContent: React.FC<Omit<SidebarProps, 'isMobile' | 'isOpen' | 'setIs
 };
 
 
+/**
+ * Componente principal da Sidebar que gerencia a renderização para mobile e desktop.
+ */
 const Sidebar: React.FC<SidebarProps> = ({ userRole, activeScreen, setActiveScreen, onLogout, isMobile, isOpen, setIsOpen }) => {
   const sidebarProps = { userRole, activeScreen, setActiveScreen, onLogout };
 
-  return (
-    <>
-      {/* Mobile Sidebar */}
-      {isMobile && (
+  // Em modo mobile, a sidebar é um overlay que não faz parte do fluxo principal do layout
+  if (isMobile) {
+    return (
         <>
-          <div
-            className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            onClick={() => setIsOpen(false)}
-          ></div>
-          <aside
-            className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-200 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
-          >
-            <SidebarContent {...sidebarProps} />
-          </aside>
+            <div
+              className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              onClick={() => setIsOpen(false)}
+              aria-hidden="true"
+            ></div>
+            <aside
+              className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-200 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+              aria-label="Menu principal"
+            >
+              <SidebarContent {...sidebarProps} />
+            </aside>
         </>
-      )}
-
-      {/* Desktop Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex-col hidden md:flex">
-        <SidebarContent {...sidebarProps} />
-      </aside>
-    </>
+    );
+  }
+  
+  // Em modo desktop, a sidebar é um elemento fixo na lateral e faz parte do layout flex
+  return (
+    <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
+      <SidebarContent {...sidebarProps} />
+    </aside>
   );
 };
 

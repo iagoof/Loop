@@ -1,7 +1,15 @@
+/**
+ * @file Central de Ajuda
+ * @description Fornece uma página de autoatendimento para os clientes, com uma
+ * seção de Perguntas Frequentes (FAQ) e links para outras formas de suporte,
+ * como o chatbot ou o atendimento telefônico.
+ */
 import React from 'react';
 import { BotIcon, PhoneIcon } from './icons';
 import { User } from '../types';
+import ContentHeader from './ContentHeader';
 
+// Conteúdo estático para as Perguntas Frequentes
 const faqs = [
   {
     question: 'Como posso ofertar um lance?',
@@ -21,6 +29,9 @@ const faqs = [
   }
 ];
 
+/**
+ * Componente de item de FAQ, utilizando a tag <details> para um acordeão acessível.
+ */
 const FAQItem: React.FC<{ q: string, a: string }> = ({ q, a }) => (
   <details className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 group">
     <summary className="flex justify-between items-center font-semibold text-slate-800 cursor-pointer list-none">
@@ -40,41 +51,37 @@ interface HelpCenterScreenProps {
 
 const HelpCenterScreen: React.FC<HelpCenterScreenProps> = ({setActiveScreen, loggedInUser}) => {
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Central de Ajuda</h2>
-          <p className="text-sm text-slate-500">Encontre respostas para suas perguntas.</p>
+    <div className="p-4 md:p-6">
+      <ContentHeader 
+        title="Central de Ajuda"
+        subtitle="Encontre respostas para suas perguntas."
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+           <h3 className="text-xl font-bold text-slate-800">Perguntas Frequentes</h3>
+          {faqs.map((faq, i) => <FAQItem key={i} q={faq.question} a={faq.answer} />)}
         </div>
-      </header>
-      <main className="flex-1 p-6 overflow-y-auto bg-slate-50">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-             <h3 className="text-xl font-bold text-slate-800">Perguntas Frequentes</h3>
-            {faqs.map((faq, i) => <FAQItem key={i} q={faq.question} a={faq.answer} />)}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              <BotIcon />
+              <h3 className="text-lg font-bold text-slate-800 mt-2">Ainda com dúvidas?</h3>
+              <p className="text-slate-600 mt-2 mb-4">Nosso assistente virtual está disponível 24/7 para te ajudar com perguntas sobre seu plano.</p>
+              <button 
+                onClick={() => setActiveScreen('client_dashboard')}
+                className="w-full bg-orange-600 text-white font-semibold py-2.5 rounded-lg hover:bg-orange-700"
+              >
+                  Falar com Assistente Virtual
+              </button>
           </div>
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-                <BotIcon />
-                <h3 className="text-lg font-bold text-slate-800 mt-2">Ainda com dúvidas?</h3>
-                <p className="text-slate-600 mt-2 mb-4">Nosso assistente virtual está disponível 24/7 para te ajudar com perguntas sobre seu plano.</p>
-                <button 
-                  onClick={() => setActiveScreen('client_dashboard')}
-                  className="w-full bg-orange-600 text-white font-semibold py-2.5 rounded-lg hover:bg-orange-700"
-                >
-                    Falar com Assistente Virtual
-                </button>
-            </div>
-             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-                <PhoneIcon />
-                <h3 className="text-lg font-bold text-slate-800 mt-2">Atendimento Humano</h3>
-                <p className="text-slate-600 mt-2">Prefere falar com uma pessoa?</p>
-                <p className="font-semibold text-slate-800">0800 123 4567</p>
-                <p className="text-sm text-slate-500">Seg. a Sex. das 9h às 18h</p>
-            </div>
+           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              <PhoneIcon />
+              <h3 className="text-lg font-bold text-slate-800 mt-2">Atendimento Humano</h3>
+              <p className="text-slate-600 mt-2">Prefere falar com uma pessoa?</p>
+              <p className="font-semibold text-slate-800">0800 123 4567</p>
+              <p className="text-sm text-slate-500">Seg. a Sex. das 9h às 18h</p>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

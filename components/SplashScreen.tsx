@@ -1,4 +1,9 @@
-
+/**
+ * @file Tela de Boas-Vindas (Splash Screen)
+ * @description Uma tela de introdução visualmente agradável que aparece na
+ * primeira vez que o usuário abre a aplicação. Utiliza uma animação de fade-in
+ * e translate para uma entrada suave dos elementos.
+ */
 import React from 'react';
 import { LogoIcon, ArrowRightIcon } from './icons';
 
@@ -9,8 +14,9 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
   const [visible, setVisible] = React.useState(false);
 
+  // Aplica a classe para a animação de entrada após um pequeno delay
   React.useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 100); // Small delay to ensure transition is applied
+    const timer = setTimeout(() => setVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
 

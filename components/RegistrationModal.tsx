@@ -1,3 +1,9 @@
+/**
+ * @file Modal de Registro de Nova Conta
+ * @description Permite que novos usuários criem uma conta, escolhendo entre
+ * um perfil de Cliente ou Representante. Valida os dados, trata erros
+ * e, em caso de sucesso, cria o registro do usuário e seu perfil associado.
+ */
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
 import { XIcon, MailIcon, LockIcon, User as UserIcon } from 'lucide-react';
@@ -19,6 +25,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 
   if (!isOpen) return null;
 
+  // Lida com a submissão do formulário de registro
   const handleRegister = async () => {
     setError('');
     if (!name || !email || !password) {
@@ -27,6 +34,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
     }
     setIsLoading(true);
 
+    // Simula uma chamada de API
     setTimeout(() => {
         const result = db.registerUser({
             name,
@@ -39,13 +47,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
             setError(result.error);
         } else {
             alert('Conta criada com sucesso!');
-            onSuccess(result);
+            onSuccess(result); // Callback de sucesso
             resetForm();
         }
         setIsLoading(false);
     }, 500);
   };
   
+  // Reseta os campos do formulário para o estado inicial
   const resetForm = () => {
       setName('');
       setEmail('');
@@ -54,21 +63,22 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
       setError('');
   }
   
+  // Fecha o modal e reseta o formulário
   const handleClose = () => {
       resetForm();
       onClose();
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50" aria-modal="true" role="dialog">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div className="flex justify-between items-center p-6 border-b border-slate-200">
           <h3 className="text-xl font-bold text-slate-800">Criar Nova Conta</h3>
-          <button onClick={handleClose} className="text-slate-500 hover:text-slate-800">
+          <button onClick={handleClose} className="text-slate-500 hover:text-slate-800" aria-label="Fechar modal">
             <XIcon />
           </button>
         </div>
-        <div className="p-6 space-y-4">
+        <form className="p-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
           
           <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de Conta</label>
@@ -101,10 +111,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
-        </div>
+        </form>
         <div className="flex justify-end items-center p-6 bg-slate-50 border-t">
           <button onClick={handleClose} className="text-slate-600 font-semibold px-4 py-2 rounded-lg hover:bg-slate-200 mr-3">Cancelar</button>
-          <button onClick={handleRegister} disabled={isLoading} className="bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-orange-700 disabled:bg-slate-400 flex items-center justify-center min-w-[120px]">
+          <button onClick={handleRegister} disabled={isLoading} className="bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-orange-700 disabled:bg-slate-400 disabled:text-slate-600 flex items-center justify-center min-w-[120px]">
             {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Criar Conta'}
           </button>
         </div>

@@ -1,56 +1,40 @@
-import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
-import { Client, ChatMessage, WhatsAppMessage } from "../types";
+/**
+ * @file Serviço de Integração com a API Gemini
+ * @description Este arquivo encapsula todas as chamadas para a API do Google Gemini.
+ * Ele gerencia a inicialização do cliente, o tratamento de erros e fornece
+ * funções específicas para diferentes casos de uso, como chatbot, análise de
+ * cliente e relatórios estratégicos.
+ */
+import { GoogleGenAI, Type } from "@google/genai";
+import { Client, ChatMessage, WhatsAppMessage, Sale, Representative } from "../types";
 
+// Instância singleton do cliente da API
 let ai: GoogleGenAI | null = null;
 
+/**
+ * Obtém a instância singleton do cliente Gemini AI.
+ * A chave da API é obtida da variável de ambiente `process.env.API_KEY`,
+ * que é injetada pelo ambiente de execução.
+ * @returns {GoogleGenAI} A instância do cliente da API.
+ */
 const getAi = (): GoogleGenAI => {
     if (!ai) {
-        // The API key is expected to be available as an environment variable.
-        // This is typically configured in the Vercel project settings or a local .env file.
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) {
-            const errorMessage = "Gemini API key not found. Please ensure the API_KEY environment variable is set.";
-            console.error(errorMessage);
-            throw new Error(errorMessage);
-        }
-        ai = new GoogleGenAI({ apiKey });
+        // A chave da API é fornecida pela plataforma de execução através de process.env.API_KEY.
+        // Confiamos que o ambiente de execução fornecerá esta variável.
+        // O SDK do Gemini lidará com o erro se a chave for inválida ou ausente.
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     }
     return ai;
 };
 
-let chatInstance: Chat | null = null;
+// --- FUNCIONALIDADE DE CHATBOT (PAINEL DO CLIENTE) ---
 
-// --- CHATBOT FUNCTIONALITY ---
-
-const getChatInstance = (client: Client): Chat => {
-    if (!chatInstance) {
-        const googleAi = getAi();
-        chatInstance = googleAi.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. 
-                You are talking to ${client.name}. 
-                Their current plan is ${client.plan}. 
-                ${client.nextPayment ? `Their next payment is due on ${client.nextPayment}.` : 'They do not have a next payment scheduled.'} 
-                Answer their questions concisely and politely based on this information.
-                Do not invent information. If you don't know the answer, say you cannot help with that request.`,
-            },
-        });
-    }
-    return chatInstance;
-};
-
-export const sendChatMessage = async (message: string, client: Client): Promise<string> => {
-    try {
-        const chat = getChatInstance(client);
-        const response: GenerateContentResponse = await chat.sendMessage({ message });
-        return response.text;
-    } catch (error) {
-        console.error("Gemini chat error:", error);
-        return "Desculpe, não consigo responder no momento. Tente novamente mais tarde.";
-    }
-};
-
+/**
+ * Envia uma mensagem para o chat e recebe a resposta em modo streaming.
+ * @param {ChatMessage[]} messages - O histórico de mensagens da conversa atual.
+ * @param {Client} client - O cliente.
+ * @param {(chunk: string) => void} onChunk - Callback chamado para cada pedaço de texto recebido.
+ */
 export const streamChatMessage = async (
     messages: ChatMessage[], 
     client: Client,
@@ -58,11 +42,11 @@ export const streamChatMessage = async (
 ): Promise<void> => {
     try {
         const googleAi = getAi();
-        // Simple history for context, not using the full chat object for this example
+        // Cria uma nova instância de chat com histórico para cada chamada de streaming
         const chat = googleAi.chats.create({
              model: 'gemini-2.5-flash',
              config: {
-                systemInstruction: `You are a helpful assistant for Loop Soluções Financeiras. You are talking to ${client.name}. Their current plan is ${client.plan}. ${client.nextPayment ? `Their next payment is due on ${client.nextPayment}.` : 'They do not have a next payment scheduled.'} Answer their questions concisely and politely based on this information.`,
+                systemInstruction: `Você é um assistente prestativo da Loop Soluções Financeiras. Você está conversando com ${client.name}. O plano atual dele(a) é ${client.plan}. ${client.nextPayment ? `O próximo vencimento é em ${client.nextPayment}.` : 'Ele(a) não tem um próximo vencimento agendado.'} Responda às perguntas dele(a) de forma concisa e educada com base nessas informações.`,
              },
              history: messages.map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'model',
@@ -73,19 +57,121 @@ export const streamChatMessage = async (
         const lastMessage = messages[messages.length - 1];
         const result = await chat.sendMessageStream({ message: lastMessage.text });
 
+        // Itera sobre a resposta em streaming
         for await (const chunk of result) {
             onChunk(chunk.text);
         }
 
     } catch (error) {
-        console.error("Gemini streaming chat error:", error);
+        console.error("Erro no streaming de chat Gemini:", error);
         onChunk("Desculpe, ocorreu um erro. Tente novamente.");
     }
 };
 
 
-// --- AI-POWERED ANALYSIS ---
+// --- ANÁLISES COM IA ---
 
+/**
+ * Interface para a resposta estruturada da análise de contrato.
+ */
+export interface ContractAnalysisResult {
+    summary: string;
+    positivePoints: string[];
+    attentionPoints: string[];
+    recommendation: 'Aprovar' | 'Aprovar com Cautela' | 'Recusar' | 'Análise Adicional Necessária';
+    finalConsiderations: string;
+}
+
+/**
+ * Gera uma análise de risco de um contrato usando IA.
+ * @param {Sale} contract - O contrato a ser analisado.
+ * @param {Client} client - O cliente associado ao contrato.
+ * @param {Representative} rep - O representante que realizou a venda.
+ * @returns {Promise<ContractAnalysisResult>} A análise estruturada gerada pela IA.
+ */
+export const getContractAnalysis = async (
+    contract: Sale,
+    client: Client,
+    rep: Representative
+): Promise<ContractAnalysisResult> => {
+    try {
+        const googleAi = getAi();
+        const prompt = `
+        Analise o seguinte contrato de consórcio pendente para a Loop Soluções Financeiras e forneça uma avaliação de risco.
+
+        **Dados do Contrato:**
+        - Plano: ${contract.plan}
+        - Valor do Crédito: R$ ${contract.value.toLocaleString('pt-BR')}
+        - Data da Venda: ${contract.date}
+
+        **Dados do Cliente:**
+        - Nome: ${client.name}
+        - Email: ${client.email}
+        - Telefone: ${client.phone}
+        - Documento: ${client.document}
+        - Status Atual: ${client.status}
+        - Plano de Interesse/Atual: ${client.plan}
+
+        **Dados do Representante de Vendas:**
+        - Nome: ${rep.name}
+        - Vendas Totais: ${rep.sales}
+        - Status: ${rep.status}
+
+        Com base nesses dados, forneça um parecer conciso em formato JSON.
+        - 'summary': Um resumo de 1 a 2 frases sobre o contrato.
+        - 'positivePoints': Uma lista de 2-3 pontos positivos (ex: cliente já ativo, bom histórico do representante).
+        - 'attentionPoints': Uma lista de 2-3 pontos que requerem atenção (ex: valor alto, cliente é um novo lead, status inativo do representante).
+        - 'recommendation': Sua recomendação final. Escolha uma das seguintes opções: 'Aprovar', 'Aprovar com Cautela', 'Recusar', 'Análise Adicional Necessária'.
+        - 'finalConsiderations': Uma justificativa breve para sua recomendação.
+        `;
+        
+        const response = await googleAi.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        summary: { type: Type.STRING, description: "Resumo do contrato." },
+                        positivePoints: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "Pontos positivos para aprovação."
+                        },
+                        attentionPoints: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "Pontos de atenção ou riscos."
+                        },
+                        recommendation: {
+                            type: Type.STRING,
+                            description: "Recomendação final.",
+                            enum: ['Aprovar', 'Aprovar com Cautela', 'Recusar', 'Análise Adicional Necessária']
+                        },
+                        finalConsiderations: { type: Type.STRING, description: "Justificativa da recomendação." }
+                    },
+                    required: ["summary", "positivePoints", "attentionPoints", "recommendation", "finalConsiderations"]
+                }
+            }
+        });
+
+        // The response text is a JSON string.
+        const cleanedText = response.text.replace(/```json|```/g, '').trim();
+        return JSON.parse(cleanedText);
+
+    } catch (error) {
+        console.error("Erro na análise de contrato Gemini:", error);
+        // Retornar um erro estruturado que pode ser tratado na UI.
+        throw new Error("Não foi possível gerar a análise do contrato via IA.");
+    }
+};
+
+/**
+ * Gera uma análise de perfil de cliente com base em um histórico.
+ * @param {string} clientHistory - Um resumo do histórico de interações do cliente.
+ * @returns {Promise<string>} A análise gerada pela IA.
+ */
 export const getClientAnalysis = async (clientHistory: string): Promise<string> => {
     try {
         const googleAi = getAi();
@@ -95,15 +181,20 @@ export const getClientAnalysis = async (clientHistory: string): Promise<string> 
         });
         return response.text;
     } catch (error) {
-        console.error("Gemini analysis error:", error);
+        console.error("Erro na análise Gemini:", error);
         return "Não foi possível gerar a análise.";
     }
 };
 
+/**
+ * Gera um relatório estratégico respondendo a uma pergunta em linguagem natural.
+ * @param {string} query - A pergunta do usuário sobre os dados da empresa.
+ * @returns {Promise<string>} O relatório gerado pela IA.
+ */
 export const getStrategicReport = async (query: string): Promise<string> => {
     try {
         const googleAi = getAi();
-        // In a real app, you would pass relevant, summarized business data in the prompt.
+        // Em um aplicativo real, você passaria dados de negócios relevantes e resumidos no prompt.
         const prompt = `Como um analista de negócios da Loop Soluções Financeiras, responda à seguinte pergunta com base nos dados (simulados) da empresa. Pergunta: "${query}"`;
         const response = await googleAi.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -111,12 +202,20 @@ export const getStrategicReport = async (query: string): Promise<string> => {
         });
         return response.text;
     } catch (error) {
-        console.error("Gemini strategic report error:", error);
+        console.error("Erro no relatório estratégico Gemini:", error);
         return "Não foi possível gerar o relatório. Verifique sua consulta e tente novamente.";
     }
 };
 
+// --- RESPOSTA DO BOT DO WHATSAPP ---
 
+/**
+ * Gera uma resposta para o bot do WhatsApp com base na mensagem, dados do cliente e histórico.
+ * @param {string} clientMessage - A nova mensagem do cliente.
+ * @param {Client | undefined} client - Os dados do cliente.
+ * @param {WhatsAppMessage[]} chatHistory - O histórico de mensagens da conversa.
+ * @returns {Promise<string>} A resposta formulada pela IA.
+ */
 export const getWhatsAppBotReply = async (
     clientMessage: string, 
     client: Client | undefined, 
@@ -151,7 +250,7 @@ export const getWhatsAppBotReply = async (
         });
         return response.text;
     } catch (error) {
-        console.error("Gemini WhatsApp bot error:", error);
+        console.error("Erro no bot de WhatsApp Gemini:", error);
         return "Desculpe, não foi possível gerar uma resposta de IA no momento.";
     }
 };

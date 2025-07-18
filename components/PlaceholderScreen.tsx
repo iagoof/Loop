@@ -1,6 +1,11 @@
-
+/**
+ * @file Tela de Placeholder (Em Construção)
+ * @description Este é um componente genérico usado para preencher o espaço de telas
+ * que ainda não foram desenvolvidas. Ele exibe uma mensagem padrão de "Página em Construção".
+ */
 import React from 'react';
 import { Layers } from 'lucide-react';
+import ContentHeader from './ContentHeader';
 
 interface PlaceholderScreenProps {
   title: string;
@@ -9,20 +14,18 @@ interface PlaceholderScreenProps {
 
 const PlaceholderScreen: React.FC<PlaceholderScreenProps> = ({ title, message }) => {
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
-          <p className="text-sm text-slate-500">{message}</p>
-        </div>
-      </header>
-      <main className="flex-1 p-6 flex items-center justify-center bg-slate-50">
+    <div className="p-4 md:p-6 h-full flex flex-col">
+      <ContentHeader 
+        title={title}
+        subtitle={message}
+      />
+      <div className="flex-1 flex items-center justify-center bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="text-center">
             <Layers className="mx-auto h-12 w-12 text-slate-400" />
             <h3 className="mt-2 text-lg font-semibold text-slate-800">Página em Construção</h3>
             <p className="mt-1 text-sm text-slate-500">Esta funcionalidade estará disponível em breve.</p>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

@@ -1,3 +1,9 @@
+/**
+ * @file Repositório Central de Ícones
+ * @description Este arquivo exporta todos os ícones da aplicação, utilizando a biblioteca `lucide-react`.
+ * Os ícones são organizados por categorias (Sidebar, UI, KPI) e têm classes CSS padronizadas
+ * para manter a consistência visual em todo o sistema.
+ */
 
 import React from 'react';
 import {
@@ -41,8 +47,19 @@ import {
   FileSignature,
   Menu,
   ArrowLeft,
+  Bell,
+  Bold,
+  Italic,
+  Underline,
+  Heading1,
+  Heading2,
+  List,
+  ListOrdered,
 } from 'lucide-react';
 
+/**
+ * Ícone do logotipo da aplicação, com um gradiente de cores.
+ */
 export const LogoIcon = () => (
     <svg width="48" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -60,11 +77,12 @@ export const LogoIcon = () => (
     </svg>
 );
 
+// Classes de estilo padrão para os ícones
 const sidebarIconClass = "w-5 h-5 mr-3";
 const kpiIconClass = "w-6 h-6";
 const actionIconClass = "w-5 h-5";
 
-// Sidebar Icons
+// --- Ícones da Barra Lateral (Sidebar) ---
 export const DashboardIcon = () => <LayoutDashboard className={sidebarIconClass} />;
 export const ClientsIcon = () => <Users className={sidebarIconClass} />;
 export const SalesIcon = () => <FileText className={sidebarIconClass} />;
@@ -82,7 +100,7 @@ export const MessageCircleIcon = () => <MessageCircle className={sidebarIconClas
 export const FileSignatureIcon = () => <FileSignature className={sidebarIconClass} />;
 
 
-// General UI Icons
+// --- Ícones Gerais da Interface (UI) ---
 export const PlusCircleIcon = () => <PlusCircle className="w-5 h-5" />;
 export const MoreHorizontalIcon = () => <MoreHorizontal className={actionIconClass} />;
 export const XIcon = () => <X className="w-6 h-6" />;
@@ -90,6 +108,7 @@ export const BotIcon = () => <Bot className="w-6 h-6" />;
 export const SendIcon = () => <Send className="w-5 h-5" />;
 export const UserIcon = () => <User className="w-6 h-6" />;
 export const BrainCircuitIcon = () => <BrainCircuit className="w-5 h-5 mr-2" />;
+export const TargetIconAction = () => <Target className={actionIconClass} />;
 export const Edit2Icon = () => <Edit2 className={actionIconClass} />;
 export const Trash2Icon = () => <Trash2 className={actionIconClass} />;
 export const UserPlusIcon = () => <UserPlus className="w-5 h-5" />;
@@ -106,9 +125,19 @@ export const ArrowRightIcon = () => <ArrowRight className="w-6 h-6 ml-2" />;
 export const ShieldCheckIcon = () => <ShieldCheck className="w-6 h-6" />;
 export const MenuIcon = () => <Menu className="w-6 h-6" />;
 export const ArrowLeftIcon = () => <ArrowLeft className="w-5 h-5" />;
+export const BellIcon = () => <Bell className="w-5 h-5" />;
+
+// --- Ícones do Editor de Texto ---
+export const BoldIcon = () => <Bold className={actionIconClass} />;
+export const ItalicIcon = () => <Italic className={actionIconClass} />;
+export const UnderlineIcon = () => <Underline className={actionIconClass} />;
+export const Heading1Icon = () => <Heading1 className={actionIconClass} />;
+export const Heading2Icon = () => <Heading2 className={actionIconClass} />;
+export const ListIcon = () => <List className={actionIconClass} />;
+export const ListOrderedIcon = () => <ListOrdered className={actionIconClass} />;
 
 
-// KPI Icons (Larger)
+// --- Ícones de Indicadores de Desempenho (KPIs), geralmente maiores ---
 export const DollarSignKpiIcon = () => <DollarSign className={kpiIconClass} />;
 export const FileTextKpiIcon = () => <FileText className={kpiIconClass} />;
 export const FileClockKpiIcon = () => <FileClock className={kpiIconClass} />;

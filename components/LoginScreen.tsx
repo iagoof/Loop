@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+/**
+ * @file Tela de Login
+ * @description Componente responsável pela autenticação do usuário. Inclui
+ * um formulário de login, tratamento de erros, estado de carregamento e
+ * links para recuperação de senha e para abrir o modal de registro.
+ */
+import React, { useState, useEffect } from 'react';
 import { LogoIcon, MailIcon, LockIcon } from './icons';
 import { User } from '../types';
 import * as db from '../services/database';
 import RegistrationModal from './RegistrationModal';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 
 interface LoginScreenProps {
@@ -10,23 +17,43 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('admin@loop.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+  
+  // Ao montar, verifica se há um e-mail salvo e preenche o formulário
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
+  // Lida com a submissão do formulário de login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
+    // Simula uma chamada de API com um pequeno atraso
     setTimeout(() => {
       const user = db.findUserByEmail(email);
+      // Simula a verificação do hash da senha
       const password_hash = `hashed_${password}`;
 
       if (user && user.password_hash === password_hash) {
-        onLogin(user);
+        // Lógica do "Lembrar-me"
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        onLogin(user); // Callback de sucesso
       } else {
         setError('Email ou senha inválidos.');
         setIsLoading(false);
@@ -34,15 +61,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     }, 500);
   };
   
+  // Chamado quando um usuário é registrado com sucesso através do modal
   const handleUserRegistered = (user: User) => {
     setIsRegisterModalOpen(false);
-    // Optionally log the user in directly after registration
+    // Opcionalmente, faz o login do usuário diretamente após o registro
     onLogin(user);
   };
   
   const handleForgotPassword = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert('Funcionalidade de recuperação de senha em desenvolvimento.');
+    setIsForgotPasswordModalOpen(true);
   };
 
 
@@ -111,6 +139,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-slate-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
@@ -129,7 +159,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-transform transform hover:scale-105 disabled:bg-slate-400 disabled:scale-100"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-transform transform hover:scale-105 disabled:bg-slate-400 disabled:text-slate-600 disabled:scale-100"
             >
               {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -151,6 +181,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       isOpen={isRegisterModalOpen}
       onClose={() => setIsRegisterModalOpen(false)}
       onSuccess={handleUserRegistered}
+    />
+    <ForgotPasswordModal
+        isOpen={isForgotPasswordModalOpen}
+        onClose={() => setIsForgotPasswordModalOpen(false)}
     />
     </>
   );

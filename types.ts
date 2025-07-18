@@ -1,98 +1,142 @@
+/**
+ * @file Definições de Tipos e Interfaces
+ * @description Este arquivo centraliza todas as definições de tipos de dados,
+ * enums e interfaces utilizados em toda a aplicação, garantindo consistência e
+ * segurança de tipo.
+ */
+
 import { ReactNode } from 'react';
 
+/**
+ * Define os papéis (funções) dos usuários no sistema.
+ */
 export enum UserRole {
   Admin = 'ADMINISTRATOR',
   Representative = 'REPRESENTATIVE',
   Client = 'CLIENT',
 }
 
+/**
+ * Representa a estrutura de um usuário no sistema.
+ */
 export interface User {
   id: number;
   name: string;
   email: string;
-  password_hash: string; // Storing hashed passwords
+  password_hash: string; // Armazena o hash da senha do usuário.
   role: UserRole;
 }
 
+/**
+ * Define os possíveis status de uma venda ou contrato.
+ */
 export enum SaleStatus {
   Approved = 'Aprovada',
   Pending = 'Pendente',
   Rejected = 'Recusada',
 }
 
+/**
+ * Representa uma venda ou contrato de consórcio.
+ */
 export interface Sale {
   id: number;
-  repId: number;
-  clientId: number;
-  plan: string;
-  value: number;
-  date: string;
+  repId: number;        // ID do representante que realizou a venda.
+  clientId: number;     // ID do cliente associado.
+  plan: string;         // Nome do plano vendido.
+  value: number;        // Valor do crédito.
+  date: string;         // Data da venda no formato 'DD/MM/YYYY'.
   status: SaleStatus;
-  commissionPaid: boolean;
-  rejectionReason?: string;
+  commissionPaid: boolean; // Indica se a comissão foi paga.
+  rejectionReason?: string; // Motivo da recusa, se aplicável.
 }
 
+/**
+ * Define a estrutura de um item de navegação na barra lateral.
+ */
 export interface NavItem {
   label: string;
   icon: ReactNode;
   screen: string;
 }
 
+/**
+ * Representa um cliente no sistema.
+ */
 export interface Client {
   id: number;
-  userId?: number; // Link to User
-  repId?: number; // Link to Representative
+  userId?: number;      // ID do usuário associado (se o cliente tiver login).
+  repId?: number;       // ID do representante responsável.
   name: string;
   email?: string;
   phone: string;
-  document?: string;
+  document?: string;    // CPF ou CNPJ.
   address?: string;
-  plan: string;
+  plan: string;         // Plano atual ou de interesse.
   status: 'Cliente Ativo' | 'Lead' | 'Inativo';
-  nextPayment?: string;
-  contractStartDate?: string; // ISO String: 'YYYY-MM-DD'
+  nextPayment?: string; // Data do próximo pagamento.
+  contractStartDate?: string; // Data de início do contrato para cálculos. Formato: 'YYYY-MM-DD'.
 }
 
+/**
+ * Representa uma mensagem no chatbot do cliente.
+ */
 export interface ChatMessage {
     sender: 'user' | 'ai';
     text: string;
 }
 
+/**
+ * Representa um representante de vendas.
+ */
 export interface Representative {
   id: number;
-  userId?: number; // Link to User
+  userId?: number;      // ID do usuário associado (para login).
   name: string;
   email: string;
-  sales: number;
-  commissionRate: number;
+  sales: number;        // Número de vendas (pode ser usado para contagem).
+  commissionRate: number; // Percentual de comissão.
+  goal?: number;        // Meta de vendas mensal em valor (ex: 200000).
   status: 'Ativo' | 'Inativo';
 }
 
+/**
+ * Representa um plano de consórcio.
+ */
 export interface Plan {
   id: number;
   name: string;
   type: 'Imóvel' | 'Automóvel' | 'Serviços';
-  valueRange: [number, number];
-  term: number; // in months
-  adminFee: number; // percentage
+  valueRange: [number, number]; // Faixa de valor do crédito [min, max].
+  term: number;         // Prazo em meses.
+  adminFee: number;     // Taxa de administração em porcentagem.
 }
 
+/**
+ * Representa uma comissão a ser paga, calculada a partir de uma venda.
+ */
 export interface Commission {
-  id: number; // Sale ID
+  id: number;           // ID da venda original.
   repName: string;
-  period: string;
-  salesValue: number;
-  commissionValue: number;
+  period: string;       // Mês/ano da comissão.
+  salesValue: number;   // Valor da venda que gerou a comissão.
+  commissionValue: number; // Valor da comissão calculada.
   status: 'Pendente' | 'Paga';
 }
 
+/**
+ * Representa uma mensagem individual no simulador de chat do WhatsApp.
+ */
 export interface WhatsAppMessage {
     id: number;
     sender: 'client' | 'bot' | 'admin';
     text: string;
-    timestamp: string; // ISO 8601 format
+    timestamp: string; // Formato ISO 8601.
 }
 
+/**
+ * Representa uma conversa (chat) completa no simulador de WhatsApp.
+ */
 export interface WhatsAppChat {
     id: number;
     clientId: number;
@@ -100,5 +144,34 @@ export interface WhatsAppChat {
     clientPhone: string;
     messages: WhatsAppMessage[];
     lastMessageTimestamp: string;
-    isTyping?: boolean;
+    isTyping?: boolean; // Para simular o "digitando...".
+}
+
+/**
+ * Representa uma notificação no sistema.
+ */
+export interface Notification {
+    id: number;
+    userId: number; // ID do usuário que deve receber a notificação.
+    message: string;
+    link?: string; // Tela para onde o usuário deve ser levado ao clicar.
+    isRead: boolean;
+    createdAt: string; // Data de criação no formato ISO 8601.
+}
+
+/**
+ * Representa as configurações de um usuário.
+ */
+export interface UserSettings {
+    profile: {
+        name: string;
+        email: string;
+        avatar: string;
+    };
+    notifications: {
+        emailNews: boolean;
+        emailSales: boolean;
+        appUpdates: boolean;
+    };
+    theme: 'light' | 'dark' | 'system';
 }

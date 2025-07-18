@@ -1,7 +1,14 @@
+/**
+ * @file Tela de Documentos
+ * @description Permite que o cliente visualize e baixe documentos importantes
+ * relacionados ao seu consórcio, como o contrato de adesão e informes.
+ * A funcionalidade de download é simulada.
+ */
 import React, { useState, useEffect } from 'react';
 import { DownloadIcon } from './icons';
 import { User, Client } from '../types';
 import * as db from '../services/database';
+import ContentHeader from './ContentHeader';
 
 
 const DocumentsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
@@ -12,15 +19,16 @@ const DocumentsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
     setClient(clientProfile || null);
   }, [loggedInUser]);
 
+  // Lista estática de documentos para demonstração
   const documents = [
     { id: 1, name: 'Contrato de Adesão', date: '10/08/2024', type: 'PDF', size: '2.3 MB', available: client && client.plan !== 'Nenhum' },
     { id: 2, name: 'Informe de Rendimentos 2024', date: '28/02/2025', type: 'PDF', size: '150 KB', available: client && client.plan !== 'Nenhum' },
     { id: 3, name: 'Regulamento do Grupo', date: '10/08/2024', type: 'PDF', size: '800 KB', available: client && client.plan !== 'Nenhum' },
-    { id: 4, name: 'Comprovante de Contemplação', date: 'N/A', type: 'PDF', size: 'N/A', available: false }, // Feature not implemented
+    { id: 4, name: 'Comprovante de Contemplação', date: 'N/A', type: 'PDF', size: 'N/A', available: false }, // Funcionalidade futura
   ];
 
+  // Simula o download de um arquivo de texto
   const handleDownload = (docName: string) => {
-    // Simulate file download
     const content = `Este é um documento de exemplo para ${docName}, para o cliente ${client?.name}.`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -38,14 +46,12 @@ const DocumentsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Meus Documentos</h2>
-          <p className="text-sm text-slate-500">Baixe seu contrato e outros arquivos importantes.</p>
-        </div>
-      </header>
-      <main className="flex-1 p-6 overflow-y-auto bg-slate-50">
+    <div className="p-4 md:p-6">
+        <ContentHeader 
+            title="Meus Documentos"
+            subtitle="Baixe seu contrato e outros arquivos importantes."
+        />
+      
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           <ul className="divide-y divide-slate-200">
             {documents.map(doc => (
@@ -68,7 +74,6 @@ const DocumentsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => 
             ))}
           </ul>
         </div>
-      </main>
     </div>
   );
 };
