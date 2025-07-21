@@ -6,7 +6,8 @@
  * cliente e relatórios estratégicos.
  */
 import { GoogleGenAI, Type } from "@google/genai";
-import { Client, ChatMessage, WhatsAppMessage, Sale, Representative, Activity, NextActionAnalysis } from "../types";
+import { Client, ChatMessage, WhatsAppMessage, Sale, Representative, Activity, NextActionAnalysis, Commission } from "../types";
+import * as db from "./database";
 
 // Instância singleton do cliente da API
 let ai: GoogleGenAI | null = null;
@@ -373,5 +374,77 @@ export const getWhatsAppBotReply = async (
     } catch (error) {
         console.error("Erro no bot de WhatsApp Gemini:", error);
         return "Desculpe, não foi possível gerar uma resposta de IA no momento.";
+    }
+};
+
+/**
+ * Gera um relatório textual de validação de comissões usando IA.
+ * @param period O período (mês/ano) do relatório.
+ * @param commissionsToReport A lista de comissões para o relatório.
+ * @param rep O representante (opcional). Se nulo, gera para todos.
+ * @param allSales A lista de todas as vendas para buscar detalhes.
+ * @param allClients A lista de todos os clientes para buscar nomes.
+ * @returns O relatório gerado pela IA em formato de texto.
+ */
+export const getCommissionAnalysisReport = async (
+    period: string,
+    commissionsToReport: Commission[],
+    rep: Representative | null,
+    allSales: Sale[],
+    allClients: Client[],
+): Promise<string> => {
+    try {
+        const googleAi = getAi();
+
+        const clientMap = new Map(allClients.map(c => [c.id, c.name]));
+        const repMap = new Map(db.getRepresentatives().map(r => [r.id, r]));
+
+        const details = commissionsToReport.map(c => {
+            const sale = allSales.find(s => s.id === c.id);
+            const repData = repMap.get(sale?.repId || -1);
+            const repRate = repData ? repData.commissionRate : 0;
+            const calculatedRate = c.salesValue > 0 ? (c.commissionValue / c.salesValue * 100) : 0;
+            
+            return `- VendaID: ${c.id}, Cliente: ${clientMap.get(sale?.clientId || -1) || 'N/A'}, Plano: ${sale?.plan || 'N/A'}, ValorVenda: R$ ${c.salesValue.toLocaleString('pt-BR')}, ValorComissao: R$ ${c.commissionValue.toLocaleString('pt-BR')}, TaxaPadrãoRep: ${repRate}%, TaxaCalculada: ${calculatedRate.toFixed(2)}%`;
+        }).join('\n');
+
+        const prompt = `
+        Você é um auditor financeiro sênior para a Loop Soluções Financeiras.
+        Sua tarefa é gerar um relatório de validação de comissões conciso e claro para o período de ${period.toUpperCase()}${rep ? ` para o representante ${rep.name}` : ''}.
+
+        **Dados Brutos para Análise:**
+        (Formato: VendaID, Cliente, Plano, ValorVenda, ValorComissao, TaxaPadrãoRep, TaxaCalculada)
+        ${details}
+
+        **Instruções para o Relatório:**
+        1. Crie um relatório em texto plano, utilizando markdown leve para ênfase (negrito para valores).
+        2. Para cada comissão, explique o cálculo de forma clara: "Venda para [Cliente] ([Plano]): R$ [ValorVenda] x [TaxaCalculada]% = **R$ [ValorComissao]**".
+        3. Se a TaxaCalculada for diferente da TaxaPadrãoRep, adicione uma breve observação entre parênteses. Ex: (taxa de bônus aplicada).
+        4. No final, some todos os valores de comissão e apresente o **"Total de Comissões a Pagar no Período"**.
+        5. O relatório deve ser profissional e direto. Comece com um título claro.
+
+        **Exemplo de Formatação da Saída:**
+
+        ### Relatório de Validação de Comissões - JUL/2025
+        **Representante:** ${rep ? rep.name : 'Todos'}
+
+        - Venda para João Silva (Plano: Meu Apê): R$ 350.000,00 x 5.00% = **R$ 17.500,00**
+        - Venda para Ricardo Alves (Plano: Casa na Praia): R$ 450.000,00 x 5.50% = **R$ 24.750,00** (taxa de bônus aplicada)
+        
+        ----------------------------------
+        **Total de Comissões a Pagar no Período:** **R$ 42.250,00**
+        `;
+
+        const response = await googleAi.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        // Limpa o markdown que o modelo às vezes adiciona ao redor do texto
+        return response.text.replace(/^```markdown|```$/g, '').trim();
+
+    } catch (error) {
+        console.error("Erro na geração do relatório de comissão com Gemini:", error);
+        throw new Error("Não foi possível gerar o relatório da IA. Verifique os dados e tente novamente.");
     }
 };

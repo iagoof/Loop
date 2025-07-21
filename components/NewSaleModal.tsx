@@ -37,7 +37,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSave, in
         if (initialData) { // Se for modo de edição, preenche os campos com dados existentes
             setClientId(String(initialData.clientId));
             setPlan(initialData.plan);
-            setValue(initialData.value.toLocaleString('pt-BR')); // Formata o valor para exibição
+            setValue(initialData.value?.toLocaleString('pt-BR') ?? ''); // Formata o valor para exibição de forma segura
             // Ajusta a data do formato 'DD/MM/YYYY' para 'YYYY-MM-DD' para o input type="date"
             setDate(initialData.date.split('/').reverse().join('-'));
         } else {
@@ -53,22 +53,28 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSave, in
   if (!isOpen) return null;
 
   const handleSave = () => {
-    if(clientId && plan && value && date){
-        onSave(
-          {
-            clientId: Number(clientId),
-            plan,
-            // Converte o valor de volta para um número float
-            value: parseFloat(value.replace(/\./g, '').replace(',', '.')),
-            // Converte a data de volta para o formato 'DD/MM/YYYY'
-            date: new Date(date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}),
-          }, 
-          initialData?.id // Passa o ID se estiver editando
-        );
-        onClose(); // Fecha o modal após salvar
-    } else {
+    if(!clientId || !plan || !value || !date){
         addToast("Por favor, preencha todos os campos.", "error");
+        return;
     }
+
+    const numericValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
+    if (isNaN(numericValue)) {
+        addToast("O valor da carta precisa ser um número válido.", "error");
+        return;
+    }
+
+    onSave(
+      {
+        clientId: Number(clientId),
+        plan,
+        value: numericValue,
+        // Converte a data de volta para o formato 'DD/MM/YYYY'
+        date: new Date(date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}),
+      }, 
+      initialData?.id // Passa o ID se estiver editando
+    );
+    onClose(); // Fecha o modal após salvar
   };
 
   const today = new Date().toISOString().split('T')[0];
