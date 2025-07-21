@@ -13,6 +13,7 @@ import StrategicReports from './components/StrategicReports';
 import PlaceholderScreen from './components/PlaceholderScreen';
 import AdminDashboard from './components/AdminDashboard';
 import RepresentativesScreen from './components/RepresentativesScreen';
+import AdminClientsScreen from './components/AdminClientsScreen';
 import PlansScreen from './components/PlansScreen';
 import ContractsScreen from './components/ContractsScreen';
 import CommissionsScreen from './components/CommissionsScreen';
@@ -73,28 +74,31 @@ const AppContent: React.FC = () => {
         db.seedDatabase();
     }, []);
 
-    // Busca notificações e configurações do usuário quando ele loga
+    // Busca notificações e configurações do usuário quando ele loga e escuta por atualizações
     useEffect(() => {
         if (loggedInUser) {
-            const fetchUserData = () => {
-                const userNotifications = db.getNotificationsForUser(loggedInUser.id);
-                setNotifications(userNotifications);
-                setUnreadCount(userNotifications.filter(n => !n.isRead).length);
-                
-                const settings = db.getUserSettings(loggedInUser.id);
-                setUserSettings(settings);
-            };
+            // Busca inicial de dados
+            const userNotifications = db.getNotificationsForUser(loggedInUser.id);
+            setNotifications(userNotifications);
+            setUnreadCount(userNotifications.filter(n => !n.isRead).length);
+            setUserSettings(db.getUserSettings(loggedInUser.id));
 
-            fetchUserData();
-            const interval = setInterval(() => {
-                const userNotifications = db.getNotificationsForUser(loggedInUser.id);
-                setNotifications(userNotifications);
-                setUnreadCount(userNotifications.filter(n => !n.isRead).length);
-            }, 30000); // Polling a cada 30s
+            // Listener para novas notificações em tempo real
+            const handleNewNotification = (notification: NotificationType) => {
+                if (notification.userId === loggedInUser.id) {
+                    setNotifications(prev => [notification, ...prev]);
+                    if (!isNotificationsPanelOpen) {
+                        setUnreadCount(prev => prev + 1);
+                    }
+                    addToast(notification.message, 'info');
+                }
+            };
             
-            return () => clearInterval(interval);
+            const unsubscribe = db.realtimeService.on('new-notification', handleNewNotification);
+
+            return () => unsubscribe();
         }
-    }, [loggedInUser]);
+    }, [loggedInUser, addToast, isNotificationsPanelOpen]);
 
     // Efeito para gerenciar o tema da aplicação (claro/escuro)
     useEffect(() => {
@@ -169,6 +173,7 @@ const AppContent: React.FC = () => {
      const screenTitles: Record<string, string> = {
         admin_dashboard: 'Dashboard do Administrador',
         representatives: 'Gestão de Representantes',
+        admin_clients: 'Gestão de Clientes',
         plans: 'Gestão de Planos',
         contracts: 'Gestão de Contratos',
         commissions: 'Gestão de Comissões',
@@ -202,6 +207,7 @@ const AppContent: React.FC = () => {
         // Telas de Administrador
         admin_dashboard: <AdminDashboard setActiveScreen={setActiveScreen} />,
         representatives: <RepresentativesScreen />,
+        admin_clients: <AdminClientsScreen />,
         plans: <PlansScreen />,
         contracts: <ContractsScreen initialFilter={screenParams.filter || 'Todos'} />,
         commissions: <CommissionsScreen />,

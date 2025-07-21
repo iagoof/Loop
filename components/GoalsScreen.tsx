@@ -58,17 +58,22 @@ const GoalsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
         setReps(db.getRepresentatives());
     }, []);
 
-    // Calcula o total de vendas aprovadas para um representante específico
+    // Calcula o total de vendas aprovadas no mês atual para um representante
     const getSalesForRep = (repId: number) => {
+        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         return sales
-            .filter(s => s.repId === repId && s.status === SaleStatus.Approved)
+            .filter(s => {
+                const [day, month, year] = s.date.split('/').map(Number);
+                const saleDate = new Date(year, month - 1, day);
+                return s.repId === repId && s.status === SaleStatus.Approved && saleDate >= startOfMonth;
+            })
             .reduce((sum, s) => sum + s.value, 0);
     }
     
     const loggedInRep = db.getRepresentativeByUserId(loggedInUser.id);
     const personalSales = loggedInRep ? getSalesForRep(loggedInRep.id) : 0;
-    // Usa a meta configurável do representante, com um fallback para o caso de não estar definida
-    const personalGoal = loggedInRep?.goal || 200000;
+    const personalGoal = loggedInRep?.goal; // Meta agora é totalmente dinâmica, sem fallback.
 
     // Cria o ranking da equipe, ordenando por vendas e destacando o usuário logado
     const teamRanking = reps
@@ -76,7 +81,7 @@ const GoalsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
             id: rep.id,
             name: rep.id === loggedInRep?.id ? `${rep.name} (Você)` : rep.name,
             sales: getSalesForRep(rep.id),
-            goal: rep.goal || 200000, // Usa a meta individual com fallback
+            goal: rep.goal, // Meta dinâmica, sem fallback
         }))
         .sort((a,b) => b.sales - a.sales)
         .map((rep, index) => ({...rep, rank: index + 1})); // Recalcula a posição no ranking após ordenar
@@ -90,15 +95,24 @@ const GoalsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
             />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Painel da Meta Pessoal */}
-                <div className="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-center flex flex-col items-center">
+                <div className="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-center flex flex-col items-center justify-center">
                     <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Sua Meta Mensal</h3>
-                    <GoalGauge current={personalSales} target={personalGoal} />
-                    <p className="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-200">{formatCurrency(personalSales)}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">de {formatCurrency(personalGoal)}</p>
+                     {personalGoal && personalGoal > 0 ? (
+                        <>
+                            <GoalGauge current={personalSales} target={personalGoal} />
+                            <p className="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-200">{formatCurrency(personalSales)}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">de {formatCurrency(personalGoal)}</p>
+                        </>
+                    ) : (
+                        <div className="text-center py-8">
+                            <p className="text-slate-500 dark:text-slate-400">Nenhuma meta definida para este mês.</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Peça para seu gestor definir uma meta na tela de Representantes.</p>
+                        </div>
+                    )}
                 </div>
                 {/* Painel do Ranking da Equipe */}
                 <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 p-6">Ranking da Equipe</h3>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 p-6">Ranking da Equipe (Vendas no Mês)</h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left text-slate-600 dark:text-slate-300">
                             <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-700/50">
@@ -110,22 +124,25 @@ const GoalsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {teamRanking.map(rep => {
-                                    const goalPercent = rep.goal > 0 ? (rep.sales / rep.goal) * 100 : 0;
-                                    return (
-                                        <tr key={rep.id} className={`border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 ${rep.id === loggedInRep?.id ? 'bg-orange-50 dark:bg-orange-900/20' : ''}`}>
-                                            <td className="px-6 py-4 text-center font-bold text-slate-700 dark:text-slate-200">{rep.rank}</td>
-                                            <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">{rep.name}</td>
-                                            <td className="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(rep.sales)}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                                    <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${Math.min(goalPercent, 100)}%` }}></div>
-                                                </div>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400">{goalPercent.toFixed(0)}%</span>
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
+                                {teamRanking.map(rep => (
+                                    <tr key={rep.id} className={`border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 ${rep.id === loggedInRep?.id ? 'bg-orange-50 dark:bg-orange-900/20' : ''}`}>
+                                        <td className="px-6 py-4 text-center font-bold text-slate-700 dark:text-slate-200">{rep.rank}</td>
+                                        <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">{rep.name}</td>
+                                        <td className="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(rep.sales)}</td>
+                                        <td className="px-6 py-4">
+                                            {rep.goal && rep.goal > 0 ? (
+                                                <>
+                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${Math.min((rep.sales / rep.goal) * 100, 100)}%` }}></div>
+                                                    </div>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400">{((rep.sales / rep.goal) * 100).toFixed(0)}%</span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 dark:text-slate-500">Não definida</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

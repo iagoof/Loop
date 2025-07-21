@@ -43,11 +43,16 @@ const WhatsAppBotScreen: React.FC = () => {
     };
 
     useEffect(() => {
-        fetchData();
-        const interval = setInterval(() => {
+        fetchData(); // Busca inicial
+
+        // Listener para atualizações em tempo real
+        const handleChatUpdate = () => {
             fetchData();
-        }, 10000); // Polling para novos chats/mensagens
-        return () => clearInterval(interval);
+        };
+
+        const unsubscribe = db.realtimeService.on('whatsapp-update', handleChatUpdate);
+        
+        return () => unsubscribe();
     }, []);
 
     useEffect(() => {

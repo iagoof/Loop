@@ -6,7 +6,7 @@
  * cliente e relatórios estratégicos.
  */
 import { GoogleGenAI, Type } from "@google/genai";
-import { Client, ChatMessage, WhatsAppMessage, Sale, Representative, Activity } from "../types";
+import { Client, ChatMessage, WhatsAppMessage, Sale, Representative, Activity, NextActionAnalysis } from "../types";
 
 // Instância singleton do cliente da API
 let ai: GoogleGenAI | null = null;
@@ -81,6 +81,74 @@ export interface ContractAnalysisResult {
     recommendation: 'Aprovar' | 'Aprovar com Cautela' | 'Recusar' | 'Análise Adicional Necessária';
     finalConsiderations: string;
 }
+
+/**
+ * Interface para a resposta estruturada da pontuação de lead.
+ */
+export interface LeadScoreResult {
+    score: number;
+    justification: string;
+}
+
+/**
+ * Gera uma pontuação de lead e uma justificativa usando IA.
+ * @param {Client} client - O lead a ser analisado.
+ * @returns {Promise<LeadScoreResult>} A pontuação e justificativa geradas pela IA.
+ */
+export const getLeadScore = async (
+    client: Client
+): Promise<LeadScoreResult> => {
+    try {
+        const googleAi = getAi();
+        const prompt = `
+        Analise o seguinte lead para a Loop Soluções Financeiras e forneça uma pontuação de potencial de venda de 1 a 100.
+
+        **Dados do Lead:**
+        - Nome: ${client.name}
+        - Email: ${client.email || 'Não informado'}
+        - Telefone: ${client.phone}
+        - Plano de Interesse: ${client.plan === 'Nenhum' ? 'Não especificado' : client.plan}
+        - Endereço: ${client.address || 'Não informado'}
+
+        Com base nesses dados, avalie o potencial deste lead se tornar um cliente. Considere fatores como:
+        - O plano de interesse (planos de maior valor como 'Imóvel' têm maior potencial de comissão).
+        - A completude dos dados (leads com mais informações são geralmente mais qualificados).
+
+        Forneça um parecer conciso em formato JSON.
+        - 'score': Um número inteiro de 1 a 100, onde 100 é o maior potencial de venda.
+        - 'justification': Uma frase curta justificando a pontuação. Ex: "Alto potencial devido ao interesse em plano imobiliário e dados completos."
+        `;
+        
+        const response = await googleAi.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        score: { type: Type.INTEGER, description: "Pontuação do lead de 1 a 100." },
+                        justification: { type: Type.STRING, description: "Justificativa curta para a pontuação." }
+                    },
+                    required: ["score", "justification"]
+                }
+            }
+        });
+
+        const cleanedText = response.text.replace(/```json|```/g, '').trim();
+        const result = JSON.parse(cleanedText);
+        
+        // Garante que o score esteja no range
+        if (result.score < 1) result.score = 1;
+        if (result.score > 100) result.score = 100;
+        
+        return result;
+
+    } catch (error) {
+        console.error("Erro na pontuação de lead com Gemini:", error);
+        throw new Error("Não foi possível gerar a pontuação do lead via IA.");
+    }
+};
 
 /**
  * Gera uma análise de risco de um contrato usando IA.
@@ -168,41 +236,74 @@ export const getContractAnalysis = async (
 };
 
 /**
- * Gera uma análise de perfil de cliente com base em seu histórico de atividades.
+ * Gera uma sugestão de próxima ação para um cliente com base em seu perfil e histórico.
  * @param client O objeto do cliente.
- * @param activities Uma lista de atividades registradas para o cliente.
- * @returns {Promise<string>} A análise gerada pela IA.
+ * @param activities Histórico de atividades do cliente.
+ * @param sales Histórico de vendas do cliente.
+ * @returns Uma sugestão de ação estruturada.
  */
-export const getClientAnalysis = async (client: Client, activities: Activity[]): Promise<string> => {
+export const getNextBestAction = async (client: Client, activities: Activity[], sales: Sale[]): Promise<NextActionAnalysis> => {
     try {
         const googleAi = getAi();
-        const history = activities
-            .map(act => `Em ${new Date(act.timestamp).toLocaleDateString('pt-BR')}, tipo: ${act.type}, notas: "${act.notes}"`)
-            .join('\n');
-            
+
+        const activityHistory = activities.length > 0
+            ? activities.map(act => `- Em ${new Date(act.timestamp).toLocaleDateString('pt-BR')}, ${act.type}: "${act.notes}"`).join('\n')
+            : "Nenhuma atividade registrada.";
+
+        const salesHistory = sales.length > 0
+            ? sales.map(s => `- Plano ${s.plan} (R$ ${s.value}) em ${s.date}, status: ${s.status}.`).join('\n')
+            : "Nenhum contrato registrado.";
+
         const prompt = `
-            Baseado nos seguintes dados e histórico de interações com o cliente, gere um resumo conciso do perfil e sugira a próxima ação de venda mais apropriada. 
-            Seja breve, direto e use uma linguagem profissional.
+        Aja como um coach de vendas sênior para a "Loop Soluções Financeiras".
+        Analise o perfil do cliente abaixo e sugira a próxima melhor ação de venda para um representante.
 
-            **Dados do Cliente:**
-            - Nome: ${client.name}
-            - Status: ${client.status}
-            - Plano de Interesse/Atual: ${client.plan}
+        **Dados do Cliente:**
+        - Nome: ${client.name}
+        - Status: ${client.status}
+        - Plano de Interesse/Atual: ${client.plan}
+        - Contato: ${client.email} / ${client.phone}
+        - Lead Score (se aplicável): ${client.leadScore || 'N/A'} com justificativa: "${client.leadJustification || 'N/A'}"
 
-            **Histórico de Interações:**
-            ${history || "Nenhuma atividade registrada."}
-            
-            **Sua Análise:**
+        **Histórico de Contratos:**
+        ${salesHistory}
+
+        **Histórico de Atividades Recentes:**
+        ${activityHistory}
+
+        Baseado em TODOS os dados, forneça a próxima ação mais estratégica. Se o cliente for um "Lead" quente, sugira uma ação para conversão. Se for um "Cliente Ativo", sugira um upsell ou um follow-up de relacionamento. Se for "Inativo", sugira uma reativação.
+
+        Retorne a resposta em formato JSON com a seguinte estrutura:
+        - "suggestionTitle": Um título curto e acionável. Ex: "Agendar Reunião de Follow-up" ou "Sugerir Plano Imobiliário".
+        - "justification": Uma explicação de 2-3 frases do motivo da sua sugestão, baseada nos dados.
+        - "suggestedCommunication": Um texto de exemplo (e-mail ou roteiro de ligação) que o representante pode usar. Seja profissional e persuasivo.
+        - "actionType": Um dos seguintes valores: 'EMAIL', 'CALL', 'MEETING', 'PLAN_SUGGESTION', 'FOLLOW_UP'.
         `;
 
         const response = await googleAi.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        suggestionTitle: { type: Type.STRING },
+                        justification: { type: Type.STRING },
+                        suggestedCommunication: { type: Type.STRING },
+                        actionType: { type: Type.STRING, enum: ['EMAIL', 'CALL', 'MEETING', 'PLAN_SUGGESTION', 'FOLLOW_UP'] }
+                    },
+                    required: ["suggestionTitle", "justification", "suggestedCommunication", "actionType"]
+                }
+            }
         });
-        return response.text;
+
+        const cleanedText = response.text.replace(/```json|```/g, '').trim();
+        return JSON.parse(cleanedText);
+
     } catch (error) {
-        console.error("Erro na análise Gemini:", error);
-        return "Não foi possível gerar a análise.";
+        console.error("Erro na sugestão de próxima ação com Gemini:", error);
+        throw new Error("Não foi possível gerar a sugestão da IA.");
     }
 };
 

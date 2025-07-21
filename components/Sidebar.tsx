@@ -41,6 +41,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   [UserRole.Admin]: [
     { label: 'Dashboard', icon: <DashboardIcon />, screen: 'admin_dashboard' },
     { label: 'Representantes', icon: <ClientsIcon />, screen: 'representatives' },
+    { label: 'Clientes', icon: <ClientsIcon />, screen: 'admin_clients' },
     { label: 'Planos', icon: <FileSpreadsheetIcon />, screen: 'plans' },
     { label: 'Contratos', icon: <FileCheck2Icon />, screen: 'contracts' },
     { label: 'Comissões', icon: <PercentIcon />, screen: 'commissions' },

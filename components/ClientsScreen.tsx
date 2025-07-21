@@ -5,16 +5,18 @@
  * lateral com detalhes e uma análise de perfil gerada por IA.
  */
 import React, { useState, useEffect, useMemo } from 'react';
-import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon, MailIcon, DownloadIcon, Edit2Icon, Trash2Icon, UsersKpiIcon, ArrowUpDown } from './icons';
-import { getClientAnalysis } from '../services/geminiService';
-import { Client, User, Representative, Activity, Plan } from '../types';
+import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon, MailIcon, DownloadIcon, Edit2Icon, Trash2Icon, UsersKpiIcon, ArrowUpDown, LightbulbIcon, ClipboardCopyIcon } from './icons';
+import { getNextBestAction, getLeadScore } from '../services/geminiService';
+import { Client, User, Representative, Activity, Plan, NextActionAnalysis, Sale } from '../types';
 import * as db from '../services/database';
 import NewClientModal from './NewClientModal';
 import ContentHeader from './ContentHeader';
 import { convertToCSV, downloadCSV } from '../utils/export';
 import { useToast } from '../contexts/ToastContext';
 import Pagination from './Pagination';
-import { Briefcase, Calendar, MessageSquare, MoreVertical, Plus } from 'lucide-react';
+import { Briefcase, MessageSquare, MoreVertical, Plus, Flame, RefreshCw } from 'lucide-react';
+import LeadScoreIndicator from './LeadScoreIndicator';
+
 
 // Mapeamento de status para classes de cor
 const statusColors = {
@@ -23,40 +25,38 @@ const statusColors = {
   'Inativo': 'text-slate-800 bg-slate-200 dark:text-slate-300 dark:bg-slate-600',
 };
 
-const activityIcons: Record<Activity['type'], React.ReactNode> = {
-    'Ligação': <PhoneIcon />,
-    'Email': <MailIcon />,
-    'Reunião': <UsersKpiIcon />,
-    'Outro': <MoreVertical />,
-}
-
 /**
  * Painel lateral que exibe os detalhes de um cliente selecionado.
  * Inclui uma análise de perfil gerada pela API do Gemini.
  */
 const ClientDetailPanel: React.FC<{ client: Client, repId: number, onClose: () => void, onEdit: (client: Client) => void, onDelete: (client: Client) => void, onRefresh: () => void }> = ({ client, repId, onClose, onEdit, onDelete, onRefresh }) => {
-    const [analysis, setAnalysis] = useState('');
+    const [analysis, setAnalysis] = useState<NextActionAnalysis | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activities, setActivities] = useState<Activity[]>([]);
+    const [sales, setSales] = useState<Sale[]>([]);
     const [newActivityNotes, setNewActivityNotes] = useState('');
     const { addToast } = useToast();
 
+    const fetchDetails = async () => {
+        setIsLoading(true);
+        setAnalysis(null);
+        const clientActivities = db.getActivitiesForClient(client.id);
+        const clientSales = db.getSales().filter(s => s.clientId === client.id);
+        setActivities(clientActivities);
+        setSales(clientSales);
+
+        try {
+            const result = await getNextBestAction(client, clientActivities, clientSales);
+            setAnalysis(result);
+        } catch (e) {
+            addToast("Falha ao obter sugestão da IA.", "error");
+            setAnalysis(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchDetails = async () => {
-            setIsLoading(true);
-            const clientActivities = db.getActivitiesForClient(client.id);
-            setActivities(clientActivities);
-            try {
-                const result = await getClientAnalysis(client, clientActivities);
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = result;
-                setAnalysis(tempDiv.textContent || tempDiv.innerText || "");
-            } catch (e) {
-                setAnalysis("Não foi possível gerar a análise do cliente no momento.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchDetails();
     }, [client]);
 
@@ -76,9 +76,14 @@ const ClientDetailPanel: React.FC<{ client: Client, repId: number, onClose: () =
         setNewActivityNotes('');
         onRefresh(); // Atualiza a lista de clientes e o painel
     };
+    
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        addToast("Texto copiado para a área de transferência!", "success");
+    }
 
     return (
-        <div className="fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-800 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out" style={{ transform: 'translateX(0%)' }}>
+        <div className="fixed top-0 right-0 h-full w-full max-w-lg bg-white dark:bg-slate-800 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out" style={{ transform: 'translateX(0%)' }}>
             <div className="flex flex-col h-full">
                 <header className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{client.name}</h3>
@@ -91,22 +96,53 @@ const ClientDetailPanel: React.FC<{ client: Client, repId: number, onClose: () =
                 <main className="p-6 overflow-y-auto flex-1 space-y-6">
                     {/* Detalhes do Cliente */}
                     <div className="space-y-4">
-                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Status: <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[client.status]}`}>{client.status}</span></p>
+                        <div className="flex justify-between items-center">
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Status: <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[client.status]}`}>{client.status}</span></p>
+                            {client.status === 'Lead' && client.leadScore != null &&
+                                <LeadScoreIndicator score={client.leadScore} justification={client.leadJustification} />
+                            }
+                        </div>
                         <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2"><MailIcon /> {client.email || 'Não informado'}</p>
                         <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2"><PhoneIcon /> {client.phone}</p>
                         <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2"><Briefcase /> Plano: {client.plan}</p>
                     </div>
-                     {/* Análise com IA */}
-                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                         <h4 className="text-md font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center"><BrainCircuitIcon /> Análise com IA</h4>
-                         <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg text-sm text-slate-700 dark:text-slate-200">
-                            {isLoading ? <p>Analisando perfil do cliente...</p> : <p className="whitespace-pre-wrap">{analysis}</p>}
+                     {/* Próxima Ação com IA */}
+                    <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
+                         <div className="flex justify-between items-center mb-2">
+                             <h4 className="text-md font-bold text-slate-800 dark:text-slate-100 flex items-center"><LightbulbIcon /> Próxima Ação com IA</h4>
+                             <button onClick={fetchDetails} disabled={isLoading} className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50">
+                                 <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} /> Gerar Nova Sugestão
+                             </button>
+                         </div>
+                         <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg space-y-4">
+                            {isLoading ? (
+                                <div className="flex items-center justify-center p-4">
+                                    <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300">Analisando perfil do cliente...</p>
+                                </div>
+                             ) : analysis ? (
+                                <>
+                                    <div>
+                                        <h5 className="font-bold text-orange-600 dark:text-orange-500">{analysis.suggestionTitle}</h5>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{analysis.justification}</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 p-3 rounded">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <p className="text-xs font-semibold uppercase text-slate-500">Sugestão de Comunicação</p>
+                                            <button onClick={() => handleCopy(analysis.suggestedCommunication)} className="text-xs flex items-center gap-1 font-semibold text-blue-600 hover:underline"><ClipboardCopyIcon /> Copiar Texto</button>
+                                        </div>
+                                        <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap font-mono p-2 bg-slate-100 dark:bg-slate-700 rounded">{analysis.suggestedCommunication}</p>
+                                    </div>
+                                </>
+                             ) : (
+                                <p className="text-sm text-slate-500 text-center p-4">Não foi possível gerar uma sugestão.</p>
+                             )}
                          </div>
                     </div>
                     {/* Histórico de Atividades */}
-                     <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                     <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
                          <h4 className="text-md font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center"><MessageSquare size={16} className="mr-2" /> Histórico de Atividades</h4>
-                         <div className="space-y-3">
+                         <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
                              {activities.map(act => (
                                  <div key={act.id} className="text-sm">
                                      <p className="font-semibold text-slate-600 dark:text-slate-300">{new Date(act.timestamp).toLocaleString('pt-BR')}</p>
@@ -127,7 +163,7 @@ const ClientDetailPanel: React.FC<{ client: Client, repId: number, onClose: () =
     );
 }
 
-type SortKey = keyof Client;
+type SortKey = keyof Client | 'leadScore';
 type SortOrder = 'asc' | 'desc';
 
 const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
@@ -169,8 +205,14 @@ const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
 
   const sortedClients = useMemo(() => {
       return [...clients].sort((a,b) => {
-          const valA = a[sortKey];
-          const valB = b[sortKey];
+          let valA: any = a[sortKey as keyof Client];
+          let valB: any = b[sortKey as keyof Client];
+          
+          if (sortKey === 'leadScore') {
+              valA = a.leadScore ?? -1;
+              valB = b.leadScore ?? -1;
+          }
+
           if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
           if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
           return 0;
@@ -180,16 +222,30 @@ const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
   const paginatedClients = sortedClients.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(clients.length / ITEMS_PER_PAGE);
 
-  const handleSaveClient = (clientData: Omit<Client, 'id' | 'repId'>, id?: number) => {
+  const handleSaveClient = async (clientData: Omit<Client, 'id' | 'repId'>, id?: number) => {
     if(id) {
         db.updateClient(id, clientData);
         addToast('Cliente atualizado com sucesso!', 'success');
+        fetchClients();
     } else {
         const dataToSave = { ...clientData, repId: currentRep?.id };
-        db.addClient(dataToSave);
+        const newClient = db.addClient(dataToSave);
         addToast('Cliente adicionado com sucesso!', 'success');
+        fetchClients(); // Atualiza a lista para mostrar o novo cliente
+        
+        // Se for um novo lead, busca a pontuação em segundo plano
+        if (newClient.status === 'Lead') {
+            addToast('Analisando potencial do lead com IA...', 'info');
+            try {
+                const { score, justification } = await getLeadScore(newClient);
+                db.updateClient(newClient.id, { leadScore: score, leadJustification: justification });
+                addToast(`Lead ${newClient.name} pontuado com ${score}!`, 'success');
+                fetchClients(); // Atualiza novamente para exibir a pontuação
+            } catch (error) {
+                addToast('Não foi possível analisar o lead.', 'error');
+            }
+        }
     }
-    fetchClients();
     setIsModalOpen(false);
     setEditingClient(null);
   }
@@ -245,6 +301,7 @@ const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
                   <SortableHeader headerKey="name" title="Nome" />
                   <SortableHeader headerKey="plan" title="Plano" />
                   <SortableHeader headerKey="status" title="Status" />
+                  <SortableHeader headerKey="leadScore" title="Potencial" />
                   <th scope="col" className="px-6 py-3">Ações</th>
                 </tr>
               </thead>
@@ -254,11 +311,14 @@ const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">{client.name}</td>
                     <td className="px-6 py-4">{client.plan}</td>
                     <td className="px-6 py-4"><span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[client.status]}`}>{client.status}</span></td>
+                    <td className="px-6 py-4">
+                      <LeadScoreIndicator score={client.leadScore} justification={client.leadJustification} />
+                    </td>
                     <td className="px-6 py-4"><button onClick={() => setSelectedClient(client)} className="font-semibold text-orange-600 hover:underline dark:text-orange-500 dark:hover:text-orange-400">Ver Detalhes</button></td>
                   </tr>
                 )) : (
                     <tr>
-                        <td colSpan={4} className="text-center py-10 text-slate-500 dark:text-slate-400">Nenhum cliente cadastrado.</td>
+                        <td colSpan={5} className="text-center py-10 text-slate-500 dark:text-slate-400">Nenhum cliente cadastrado.</td>
                     </tr>
                 )}
               </tbody>

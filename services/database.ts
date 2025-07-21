@@ -7,6 +7,47 @@
  */
 import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole, WhatsAppChat, WhatsAppMessage, Notification, UserSettings, Activity } from '../types';
 
+// --- SERVIÇO DE TEMPO REAL (SIMULAÇÃO) ---
+// Em uma aplicação real, isto se conectaria a um servidor WebSocket.
+// Para esta simulação, usamos um padrão de "event emitter" para replicar
+// o comportamento de push de dados do servidor para o cliente.
+type EventCallback = (data: any) => void;
+const listeners: { [key: string]: EventCallback[] } = {};
+
+export const realtimeService = {
+    /**
+     * Inscreve-se para ouvir um evento em tempo real.
+     * @param eventName Nome do evento (ex: 'new-notification').
+     * @param callback Função a ser chamada quando o evento é emitido.
+     * @returns Uma função para cancelar a inscrição.
+     */
+    on: (eventName: string, callback: EventCallback) => {
+        if (!listeners[eventName]) {
+            listeners[eventName] = [];
+        }
+        listeners[eventName].push(callback);
+        
+        return () => {
+            listeners[eventName] = listeners[eventName].filter(l => l !== callback);
+        };
+    },
+    /**
+     * Emite um evento para todos os ouvintes inscritos.
+     * Simula uma mensagem push do servidor.
+     * @param eventName Nome do evento.
+     * @param data Dados a serem enviados com o evento.
+     */
+    emit: (eventName: string, data: any) => {
+        // Simula uma latência de rede para realismo
+        setTimeout(() => {
+            if (listeners[eventName]) {
+                listeners[eventName].forEach(callback => callback(data));
+            }
+        }, 50 + Math.random() * 200);
+    }
+};
+
+
 // --- NOTA DE SEGURANÇA DOS DADOS ---
 // Em uma aplicação real, NUNCA armazene senhas em texto plano.
 // Este é um exemplo simplificado. Estamos armazenando um "password_hash" para simular isso.
@@ -294,12 +335,13 @@ export const addNotification = (notificationData: Omit<Notification, 'id' | 'isR
     createdAt: new Date().toISOString(),
   };
 
-  // Lógica para enviar e-mail simulado
   const userSettings = getUserSettings(notificationData.userId);
   const user = getUsers().find(u => u.id === notificationData.userId);
 
   if (userSettings.notifications.appUpdates) {
     set('notifications', [newNotification, ...notifications]);
+    // Emite o evento em tempo real para clientes ativos
+    realtimeService.emit('new-notification', newNotification);
   }
 
   // Simula envio de e-mail se a configuração estiver ativa
@@ -386,7 +428,7 @@ export const addRepresentative = (data: Omit<Representative, 'id'|'sales'|'statu
         id: getNextId(reps),
         sales: 0,
         status: 'Ativo',
-        goal: 100000, // Define uma meta padrão para novos representantes
+        // A meta será 'undefined' por padrão e deverá ser definida pelo admin.
     };
     set('representatives', [...reps, newRep]);
     return newRep;
@@ -466,8 +508,24 @@ export const updateClient = (id: number, updates: Partial<Client>): Client | und
     return updatedClient;
 };
 export const deleteClient = (id: number): void => {
+    // Remove o cliente
     const clients = getClients();
     set('clients', clients.filter(c => c.id !== id));
+    
+    // Remove as atividades associadas
+    const activities = getActivities();
+    set('activities', activities.filter(a => a.clientId !== id));
+
+    // Remove os chats associados
+    const chats = get<WhatsAppChat[]>('whatsapp_chats', []);
+    set('whatsapp_chats', chats.filter(chat => chat.clientId !== id));
+
+    // Remove as vendas/contratos associados
+    const sales = getSales();
+    set('sales', sales.filter(s => s.clientId !== id));
+
+    // Nota: O login de usuário associado (`User`) não é removido para evitar a exclusão acidental de contas.
+    // O cliente pode se registrar novamente ou ser reassociado a um novo perfil de cliente.
 };
 export const getClientByUserId = (userId: number): Client | undefined => {
     return getClients().find(c => c.userId === userId);
@@ -541,6 +599,7 @@ export const addWhatsAppMessage = (chatId: number, message: Omit<WhatsAppMessage
 
     if (updatedChat) {
         set('whatsapp_chats', newChats);
+        realtimeService.emit('whatsapp-update', { chatId: updatedChat.id });
     }
     return updatedChat;
 };
@@ -591,6 +650,7 @@ export const simulateIncomingWhatsAppMessage = (): { chat: WhatsAppChat, newMess
     chat.lastMessageTimestamp = newTimestamp;
     
     set('whatsapp_chats', chats);
+    realtimeService.emit('whatsapp-update', { chatId: chat.id });
 
     return { chat, newMessage };
 };

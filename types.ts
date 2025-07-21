@@ -76,6 +76,8 @@ export interface Client {
   status: 'Cliente Ativo' | 'Lead' | 'Inativo';
   nextPayment?: string; // Data do próximo pagamento.
   contractStartDate?: string; // Data de início do contrato para cálculos. Formato: 'YYYY-MM-DD'.
+  leadScore?: number; // Pontuação do lead gerada por IA (1-100)
+  leadJustification?: string; // Justificativa da IA para a pontuação
 }
 
 /**
@@ -186,4 +188,14 @@ export interface Activity {
   type: 'Ligação' | 'Email' | 'Reunião' | 'Outro';
   notes: string;
   timestamp: string; // Data da atividade no formato ISO 8601.
+}
+
+/**
+ * Representa a análise da IA para a próxima melhor ação de venda.
+ */
+export interface NextActionAnalysis {
+  suggestionTitle: string;
+  justification: string;
+  suggestedCommunication: string;
+  actionType: 'EMAIL' | 'CALL' | 'MEETING' | 'PLAN_SUGGESTION' | 'FOLLOW_UP';
 }

@@ -56,6 +56,14 @@ import {
   List,
   ListOrdered,
   ArrowUpDown as ArrowUpDownLucide,
+  BarChart3,
+  Building,
+  ChevronDown,
+  CheckCircle2,
+  FilterX,
+  Scale,
+  Lightbulb,
+  ClipboardCopy,
 } from 'lucide-react';
 
 /**
@@ -128,6 +136,18 @@ export const MenuIcon = () => <Menu className="w-6 h-6" />;
 export const ArrowLeftIcon = () => <ArrowLeft className="w-5 h-5" />;
 export const BellIcon = () => <Bell className="w-5 h-5" />;
 export const ArrowUpDown = ArrowUpDownLucide;
+export const FilterXIcon = () => <FilterX className="w-4 h-4 mr-2" />;
+export const LightbulbIcon = () => <Lightbulb className="w-5 h-5 mr-2 text-orange-500" />;
+export const ClipboardCopyIcon = () => <ClipboardCopy className="w-4 h-4" />;
+
+
+// --- Ícones da Landing Page ---
+export const BarChart3Icon = () => <BarChart3 className="w-6 h-6" />;
+export const BuildingIcon = () => <Building className="w-10 h-10 text-orange-600 mb-4" />;
+export const ChevronDownIcon = () => <ChevronDown className="w-5 h-5 transition-transform transform group-open:rotate-180" />;
+export const UsersIconLucide = () => <Users className="w-10 h-10 text-orange-600 mb-4" />;
+export const CheckCircle2Icon = () => <CheckCircle2 className="w-5 h-5 text-green-500 mr-3" />;
+
 
 // --- Ícones do Editor de Texto ---
 export const BoldIcon = () => <Bold className={actionIconClass} />;
@@ -146,3 +166,5 @@ export const FileClockKpiIcon = () => <FileClock className={kpiIconClass} />;
 export const UserCheckKpiIcon = () => <UserCheck className={kpiIconClass} />;
 export const UsersKpiIcon = () => <Users className={kpiIconClass} />;
 export const TargetKpiIcon = () => <Target className={kpiIconClass} />;
+export const ScaleKpiIcon = () => <Scale className={kpiIconClass} />;
+export const PercentKpiIcon = () => <Percent className={kpiIconClass} />;
