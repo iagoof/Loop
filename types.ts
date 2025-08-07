@@ -12,7 +12,8 @@ import { ReactNode } from 'react';
  */
 export enum UserRole {
   Admin = 'ADMINISTRATOR',
-  Representative = 'REPRESENTATIVE',
+  Supervisor = 'SUPERVISOR',
+  Vendedor = 'VENDEDOR',
   Client = 'CLIENT',
 }
 
@@ -89,17 +90,33 @@ export interface ChatMessage {
 }
 
 /**
- * Representa um representante de vendas.
+ * Representa uma insígnia (badge) do sistema de gamificação.
+ */
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // Emoji
+  condition: (rep: Representative, sales: Sale[], clients: Client[]) => boolean;
+}
+
+
+/**
+ * Representa um representante de vendas (Vendedor ou Supervisor).
  */
 export interface Representative {
   id: number;
   userId?: number;      // ID do usuário associado (para login).
+  supervisorId?: number; // ID do supervisor, se for um vendedor.
   name: string;
   email: string;
   sales: number;        // Número de vendas (pode ser usado para contagem).
   commissionRate: number; // Percentual de comissão.
   goal?: number;        // Meta de vendas mensal em valor (ex: 200000).
   status: 'Ativo' | 'Inativo';
+  points: number;       // Pontos para gamificação.
+  badges: Badge[];      // Insígnias conquistadas.
+  level: { name: string; icon: string; minPoints: number; }; // Nível de gamificação
 }
 
 /**

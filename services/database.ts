@@ -5,7 +5,7 @@
  * e modificação (setters) para todas as entidades do sistema (Usuários, Vendas, Clientes, etc.).
  * É uma solução robusta para demonstração e desenvolvimento frontend sem a necessidade de um backend real.
  */
-import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole, WhatsAppChat, WhatsAppMessage, Notification, UserSettings, Activity } from '../types';
+import { Sale, SaleStatus, Client, Representative, Plan, Commission, User, UserRole, WhatsAppChat, WhatsAppMessage, Notification, UserSettings, Activity, Badge } from '../types';
 
 // --- SERVIÇO DE TEMPO REAL (SIMULAÇÃO) ---
 // Em uma aplicação real, isto se conectaria a um servidor WebSocket.
@@ -55,28 +55,50 @@ export const realtimeService = {
 const simpleHash = (s: string) => `hashed_${s}`;
 
 
+// --- CONFIGURAÇÃO DE GAMIFICAÇÃO ---
+export const LEVELS = [
+    { name: 'Iniciante', icon: '🔰', minPoints: 0 },
+    { name: 'Bronze', icon: '🥉', minPoints: 1000 },
+    { name: 'Prata', icon: '🥈', minPoints: 5000 },
+    { name: 'Ouro', icon: '🥇', minPoints: 15000 },
+    { name: 'Platina', icon: '💎', minPoints: 50000 },
+    { name: 'Diamante', icon: '👑', minPoints: 100000 },
+];
+
+export const ALL_BADGES: Badge[] = [
+    { id: 'primeira-venda', name: 'Primeira Venda', description: 'Realizou sua primeira venda aprovada.', icon: '🎉', condition: (rep, sales) => sales.filter(s => s.status === SaleStatus.Approved).length >= 1 },
+    { id: 'vendedor-imobiliario', name: 'Especialista Imobiliário', description: 'Vendeu seu primeiro plano de imóvel.', icon: '🏡', condition: (rep, sales) => sales.some(s => s.status === SaleStatus.Approved && s.plan.includes('Imóvel')) },
+    { id: 'mestre-dos-carros', name: 'Mestre dos Carros', description: 'Vendeu 5 planos de automóveis.', icon: '🚗', condition: (rep, sales) => sales.filter(s => s.status === SaleStatus.Approved && s.plan.includes('Automóvel')).length >= 5 },
+    { id: 'grande-contrato', name: 'O Tubarão', description: 'Fechou um contrato de mais de R$ 500.000.', icon: '🦈', condition: (rep, sales) => sales.some(s => s.status === SaleStatus.Approved && s.value >= 500000) },
+    { id: 'dedicacao', name: 'Carteira Cheia', description: 'Alcançou 10 clientes ativos.', icon: '💼', condition: (rep, sales, clients) => clients.filter(c => c.repId === rep.id && c.status === 'Cliente Ativo').length >= 10 },
+    { id: 'consistencia', name: 'Consistência', description: 'Realizou vendas em 3 meses diferentes.', icon: '🎯', condition: (rep, sales) => {
+        const months = new Set(sales.filter(s => s.status === SaleStatus.Approved).map(s => s.date.substring(3))); // "MM/YYYY"
+        return months.size >= 3;
+    }},
+];
+
 // --- DADOS INICIAIS (SEED) ---
 const initialUsers: User[] = [
   { id: 101, name: 'Admin', email: 'admin@loop.com', password_hash: simpleHash('password123'), role: UserRole.Admin },
-  { id: 1, name: 'Carlos Andrade', email: 'carlos.a@example.com', password_hash: simpleHash('password123'), role: UserRole.Representative },
-  { id: 2, name: 'Sofia Ribeiro', email: 'sofia.r@example.com', password_hash: simpleHash('password123'), role: UserRole.Representative },
-  { id: 3, name: 'Juliana Paes', email: 'juliana.p@example.com', password_hash: simpleHash('password123'), role: UserRole.Representative },
-  { id: 4, name: 'Pedro Mendes', email: 'pedro.m@example.com', password_hash: simpleHash('password123'), role: UserRole.Representative },
-  { id: 5, name: 'Mariana Lima', email: 'mariana.l@example.com', password_hash: simpleHash('password123'), role: UserRole.Representative },
+  { id: 1, name: 'Carlos Andrade', email: 'carlos.a@example.com', password_hash: simpleHash('password123'), role: UserRole.Supervisor },
+  { id: 2, name: 'Sofia Ribeiro', email: 'sofia.r@example.com', password_hash: simpleHash('password123'), role: UserRole.Vendedor },
+  { id: 3, name: 'Juliana Paes', email: 'juliana.p@example.com', password_hash: simpleHash('password123'), role: UserRole.Vendedor },
+  { id: 4, name: 'Pedro Mendes', email: 'pedro.m@example.com', password_hash: simpleHash('password123'), role: UserRole.Vendedor },
+  { id: 5, name: 'Mariana Lima', email: 'mariana.l@example.com', password_hash: simpleHash('password123'), role: UserRole.Supervisor },
   { id: 12, name: 'Ana Costa', email: 'ana.c@example.com', password_hash: simpleHash('password123'), role: UserRole.Client },
-  { id: 1, name: 'Maria Oliveira', email: 'maria.o@example.com', password_hash: simpleHash('password123'), role: UserRole.Client },
+  { id: 13, name: 'Maria Oliveira', email: 'maria.o@example.com', password_hash: simpleHash('password123'), role: UserRole.Client },
 ];
 
 const initialReps: Representative[] = [
-  { id: 1, userId: 1, name: 'Carlos Andrade', email: 'carlos.a@example.com', sales: 12, commissionRate: 5, goal: 200000, status: 'Ativo' },
-  { id: 2, userId: 2, name: 'Sofia Ribeiro', email: 'sofia.r@example.com', sales: 9, commissionRate: 5, goal: 150000, status: 'Ativo' },
-  { id: 3, userId: 3, name: 'Juliana Paes', email: 'juliana.p@example.com', sales: 7, commissionRate: 4.5, goal: 120000, status: 'Ativo' },
-  { id: 4, userId: 4, name: 'Pedro Mendes', email: 'pedro.m@example.com', sales: 5, commissionRate: 4.5, goal: 100000, status: 'Inativo' },
-  { id: 5, userId: 5, name: 'Mariana Lima', email: 'mariana.l@example.com', sales: 15, commissionRate: 5.5, goal: 250000, status: 'Ativo' },
+  { id: 1, userId: 1, name: 'Carlos Andrade', email: 'carlos.a@example.com', sales: 12, commissionRate: 5, goal: 200000, status: 'Ativo', points: 1250, badges: [], level: LEVELS[1] },
+  { id: 2, userId: 2, supervisorId: 1, name: 'Sofia Ribeiro', email: 'sofia.r@example.com', sales: 9, commissionRate: 5, goal: 150000, status: 'Ativo', points: 980, badges: [], level: LEVELS[0] },
+  { id: 3, userId: 3, supervisorId: 5, name: 'Juliana Paes', email: 'juliana.p@example.com', sales: 7, commissionRate: 4.5, goal: 120000, status: 'Ativo', points: 720, badges: [], level: LEVELS[0] },
+  { id: 4, userId: 4, supervisorId: 1, name: 'Pedro Mendes', email: 'pedro.m@example.com', sales: 5, commissionRate: 4.5, goal: 100000, status: 'Inativo', points: 450, badges: [], level: LEVELS[0] },
+  { id: 5, userId: 5, name: 'Mariana Lima', email: 'mariana.l@example.com', sales: 15, commissionRate: 5.5, goal: 250000, status: 'Ativo', points: 1800, badges: [], level: LEVELS[1] },
 ];
 
 const initialClients: Client[] = [
-  { id: 1, userId: 1, repId: 2, name: 'Maria Oliveira', email: 'maria.o@example.com', phone: '(11) 98765-4321', document: '123.456.789-10', address: 'Rua das Flores, 123, São Paulo, SP', plan: 'Casa na Praia', status: 'Cliente Ativo', nextPayment: '20/08/2025' },
+  { id: 1, userId: 13, repId: 2, name: 'Maria Oliveira', email: 'maria.o@example.com', phone: '(11) 98765-4321', document: '123.456.789-10', address: 'Rua das Flores, 123, São Paulo, SP', plan: 'Casa na Praia', status: 'Cliente Ativo', nextPayment: '20/08/2025' },
   { id: 2, repId: 1, name: 'João Silva', email: 'joao.s@example.com', phone: '(21) 91234-5678', document: '234.567.890-11', address: 'Avenida Copacabana, 456, Rio de Janeiro, RJ', plan: 'Carro Novo', status: 'Cliente Ativo', nextPayment: '25/08/2025' },
   { id: 3, repId: 2, name: 'Carlos Pereira', email: 'carlos.p@example.com', phone: '(31) 95555-8888', document: '345.678.901-22', address: 'Rua da Bahia, 789, Belo Horizonte, MG', plan: 'Meu Apê', status: 'Inativo' },
   { id: 4, repId: 3, name: 'Beatriz Lima', email: 'beatriz.l@example.com', phone: '(41) 99999-1111', document: '456.789.012-33', address: 'Rua das Araucárias, 101, Curitiba, PR', plan: 'Sua Viagem', status: 'Cliente Ativo', nextPayment: '10/09/2025' },
@@ -215,7 +237,7 @@ const getNextId = <T extends {id: number}>(items: T[]): number => {
  * Utiliza uma flag com versionamento para permitir repopular com novos dados no futuro.
  */
 export const seedDatabase = () => {
-    if (!localStorage.getItem('seeded_v8')) { // Altere a versão para forçar a repopulação
+    if (!localStorage.getItem('seeded_v9')) { // Altere a versão para forçar a repopulação
         set('users', initialUsers);
         set('sales', initialSales);
         set('clients', initialClients);
@@ -225,7 +247,7 @@ export const seedDatabase = () => {
         set('contract_template', DEFAULT_CONTRACT_TEMPLATE);
         set('notifications', []); // Inicializa as notificações
         set('activities', initialActivities); // Adiciona atividades iniciais
-        localStorage.setItem('seeded_v8', 'true');
+        localStorage.setItem('seeded_v9', 'true');
     }
 };
 
@@ -253,7 +275,7 @@ export const registerUser = (data: Omit<User, 'id' | 'password_hash'> & { passwo
     // Se um novo cliente ou representante é registrado, cria um perfil correspondente
     if(newUser.role === UserRole.Client) {
         addClient({ name: newUser.name, email: newUser.email, phone: '', document: '', address: '', plan: 'Nenhum', status: 'Lead', userId: newUser.id });
-    } else if (newUser.role === UserRole.Representative) {
+    } else if (newUser.role === UserRole.Vendedor || newUser.role === UserRole.Supervisor) {
         addRepresentative({ name: newUser.name, email: newUser.email, commissionRate: 4, userId: newUser.id });
     }
     
@@ -304,7 +326,7 @@ export const getUserSettings = (userId: number): UserSettings => {
     },
     notifications: {
       emailNews: true,
-      emailSales: user?.role === UserRole.Representative,
+      emailSales: user?.role === UserRole.Vendedor || user?.role === UserRole.Supervisor,
       appUpdates: true,
     },
     theme: 'system'
@@ -345,7 +367,7 @@ export const addNotification = (notificationData: Omit<Notification, 'id' | 'isR
   }
 
   // Simula envio de e-mail se a configuração estiver ativa
-  if (user && user.role === UserRole.Representative && userSettings.notifications.emailSales) {
+  if (user && (user.role === UserRole.Vendedor || user.role === UserRole.Supervisor) && userSettings.notifications.emailSales) {
       console.log(`[SIMULAÇÃO DE EMAIL] Enviando notificação para ${user.email}: "${notificationData.message}"`);
   }
 };
@@ -356,6 +378,47 @@ export const markNotificationsAsRead = (userId: number): void => {
     (n.userId === userId && !n.isRead) ? { ...n, isRead: true } : n
   );
   set('notifications', updatedNotifications);
+};
+
+// --- Funções de Gamificação ---
+const calculatePointsForSale = (sale: Sale): number => {
+    // Ex: 1 ponto para cada R$1000 do valor do crédito
+    return Math.floor(sale.value / 1000);
+};
+
+const checkAndAwardBadges = (repId: number) => {
+    const rep = getRepresentatives().find(r => r.id === repId);
+    if (!rep) return;
+    
+    const repSales = getSales().filter(s => s.repId === repId);
+    const repClients = getClients(); // Passar todos para a condição avaliar
+    const currentBadgeIds = new Set(rep.badges.map(b => b.id));
+
+    ALL_BADGES.forEach(badge => {
+        if (!currentBadgeIds.has(badge.id) && badge.condition(rep, repSales, repClients)) {
+            rep.badges.push(badge);
+            addNotification({
+                userId: rep.userId!,
+                message: `Nova conquista desbloqueada: ${badge.name}!`,
+                link: 'gamification'
+            });
+        }
+    });
+
+    return rep.badges;
+};
+
+const updateRepLevel = (rep: Representative): Representative['level'] => {
+    const newLevel = [...LEVELS].reverse().find(level => rep.points >= level.minPoints);
+    if (newLevel && newLevel.name !== rep.level.name) {
+        addNotification({
+            userId: rep.userId!,
+            message: `Você subiu para o nível ${newLevel.name}!`,
+            link: 'gamification'
+        });
+        return newLevel;
+    }
+    return rep.level;
 };
 
 
@@ -399,6 +462,26 @@ export const updateSale = (id: number, updates: Partial<Sale>): Sale | undefined
 
     if (updatedSale) {
         set('sales', newSales);
+        
+        // --- LÓGICA DE GAMIFICAÇÃO ---
+        // Se a venda foi aprovada e antes não era
+        if (updatedSale.status === SaleStatus.Approved && originalSale?.status !== SaleStatus.Approved) {
+            const rep = getRepresentatives().find(r => r.id === updatedSale!.repId);
+            if (rep) {
+                const pointsGained = calculatePointsForSale(updatedSale);
+                rep.points += pointsGained;
+                rep.badges = checkAndAwardBadges(rep.id);
+                rep.level = updateRepLevel(rep);
+                updateRepresentative(rep.id, { points: rep.points, badges: rep.badges, level: rep.level });
+
+                addNotification({
+                    userId: rep.userId!,
+                    message: `+${pointsGained} pontos pela venda para ${getClientBySaleId(id)?.name}!`,
+                    link: 'gamification'
+                });
+            }
+        }
+        // --- FIM DA LÓGICA DE GAMIFICAÇÃO ---
 
         // Notifica o representante se o status mudou
         if (originalSale && updates.status && originalSale.status !== updates.status) {
@@ -419,15 +502,24 @@ export const updateSale = (id: number, updates: Partial<Sale>): Sale | undefined
     return updatedSale;
 };
 
+const getClientBySaleId = (saleId: number): Client | undefined => {
+    const sale = getSales().find(s => s.id === saleId);
+    return sale ? getClients().find(c => c.id === sale.clientId) : undefined;
+};
+
+
 // --- API de Representantes ---
 export const getRepresentatives = (): Representative[] => get('representatives', []);
-export const addRepresentative = (data: Omit<Representative, 'id'|'sales'|'status'|'goal'>): Representative => {
+export const addRepresentative = (data: Omit<Representative, 'id'|'sales'|'status'|'goal'|'points'|'badges'|'level'>): Representative => {
     const reps = getRepresentatives();
     const newRep: Representative = {
         ...data,
         id: getNextId(reps),
         sales: 0,
         status: 'Ativo',
+        points: 0,
+        badges: [],
+        level: LEVELS[0],
         // A meta será 'undefined' por padrão e deverá ser definida pelo admin.
     };
     set('representatives', [...reps, newRep]);

@@ -4,35 +4,54 @@
  * tanto para criar um novo representante quanto para editar um existente.
  * Ele é preenchido com dados iniciais quando em modo de edição.
  */
-import React, { useState, useEffect } from 'react';
-import { Representative } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Representative, UserRole, User } from '../types';
 import { XIcon } from './icons';
 import { useToast } from '../contexts/ToastContext';
+import * as db from '../services/database';
 
 interface NewRepModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newRep: Omit<Representative, 'id' | 'sales' | 'status'>, id?: number) => void;
+  onSave: (newRep: Omit<Representative, 'id' | 'sales' | 'status' | 'goal' | 'points' | 'badges' | 'level'>, id?: number) => void;
   initialData?: Representative | null; // Dados para preencher o formulário em modo de edição
+  allReps: Representative[];
 }
 
-const NewRepModal: React.FC<NewRepModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
+const NewRepModal: React.FC<NewRepModalProps> = ({ isOpen, onClose, onSave, initialData, allReps }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [commissionRate, setCommissionRate] = useState('');
+  const [role, setRole] = useState<UserRole.Vendedor | UserRole.Supervisor>(UserRole.Vendedor);
+  const [supervisorId, setSupervisorId] = useState<string>('');
   const { addToast } = useToast();
+
+  const supervisors = useMemo(() => {
+    const users = db.getUsers();
+    return allReps.filter(r => {
+        const user = users.find(u => u.id === r.userId);
+        return user?.role === UserRole.Supervisor;
+    })
+  }, [allReps]);
 
   // Efeito para popular ou resetar o formulário quando o modal abre
   useEffect(() => {
       if(isOpen) {
-          if (initialData) { // Modo de edição
+          const users = db.getUsers();
+          const user = users.find(u => u.id === initialData?.userId);
+          
+          if (initialData && user) { // Modo de edição
               setName(initialData.name);
               setEmail(initialData.email);
               setCommissionRate(String(initialData.commissionRate));
+              setRole(user.role === UserRole.Supervisor ? UserRole.Supervisor : UserRole.Vendedor);
+              setSupervisorId(String(initialData.supervisorId || ''));
           } else { // Modo de adição
               setName('');
               setEmail('');
               setCommissionRate('');
+              setRole(UserRole.Vendedor);
+              setSupervisorId('');
           }
       }
   }, [isOpen, initialData]);
@@ -40,16 +59,23 @@ const NewRepModal: React.FC<NewRepModalProps> = ({ isOpen, onClose, onSave, init
   if (!isOpen) return null;
 
   const handleSave = () => {
-    if (name && email && commissionRate) {
-      onSave({
-        name,
-        email,
-        commissionRate: parseFloat(commissionRate),
-      }, initialData?.id); // Passa o ID se estiver editando
-      onClose();
-    } else {
+    if (!name || !email || !commissionRate) {
       addToast("Por favor, preencha todos os campos.", "error");
+      return;
     }
+    if (role === UserRole.Vendedor && !supervisorId) {
+        addToast("Por favor, selecione um supervisor para o vendedor.", "error");
+        return;
+    }
+
+    onSave({
+      name,
+      email,
+      commissionRate: parseFloat(commissionRate),
+      supervisorId: role === UserRole.Vendedor ? Number(supervisorId) : undefined,
+      // O userId e role são gerenciados na criação/edição do usuário
+    }, initialData?.id);
+    onClose();
   };
 
   return (
@@ -68,8 +94,24 @@ const NewRepModal: React.FC<NewRepModalProps> = ({ isOpen, onClose, onSave, init
           </div>
           <div>
             <label htmlFor="rep-email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email</label>
-            <input type="email" id="rep-email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500" />
+            <input type="email" id="rep-email" value={email} onChange={e => setEmail(e.target.value)} disabled={!!initialData} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:bg-slate-100 dark:disabled:bg-slate-700/50" />
           </div>
+           <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cargo</label>
+              <select value={role} onChange={e => setRole(e.target.value as any)} disabled={!!initialData} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg disabled:bg-slate-100 dark:disabled:bg-slate-700/50">
+                  <option value={UserRole.Vendedor}>Vendedor</option>
+                  <option value={UserRole.Supervisor}>Supervisor</option>
+              </select>
+          </div>
+          {role === UserRole.Vendedor && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Supervisor</label>
+                <select value={supervisorId} onChange={e => setSupervisorId(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg">
+                    <option value="">Selecione um supervisor</option>
+                    {supervisors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+            </div>
+          )}
           <div>
             <label htmlFor="rep-commission" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Taxa de Comissão (%)</label>
             <input type="number" id="rep-commission" value={commissionRate} onChange={e => setCommissionRate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500" />

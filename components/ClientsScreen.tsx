@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PlusCircleIcon, BrainCircuitIcon, XIcon, PhoneIcon, MailIcon, DownloadIcon, Edit2Icon, Trash2Icon, UsersKpiIcon, ArrowUpDown, LightbulbIcon, ClipboardCopyIcon } from './icons';
 import { getNextBestAction, getLeadScore } from '../services/geminiService';
-import { Client, User, Representative, Activity, Plan, NextActionAnalysis, Sale } from '../types';
+import { Client, User, Representative, Activity, Plan, NextActionAnalysis, Sale, UserRole } from '../types';
 import * as db from '../services/database';
 import NewClientModal from './NewClientModal';
 import ContentHeader from './ContentHeader';
@@ -180,6 +180,10 @@ const ClientsScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
   const ITEMS_PER_PAGE = 10;
 
   const fetchClients = () => {
+    if (loggedInUser.role !== UserRole.Vendedor) {
+      setClients([]);
+      return;
+    }
     const repProfile = db.getRepresentativeByUserId(loggedInUser.id);
     if(repProfile) {
         setCurrentRep(repProfile);

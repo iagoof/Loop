@@ -72,6 +72,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ loggedInUser, onSetting
         return result;
     };
 
+    const isRepresentative = loggedInUser.role === UserRole.Vendedor || loggedInUser.role === UserRole.Supervisor;
+
     return (
         <>
             <div className="p-4 md:p-6">
@@ -128,7 +130,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ loggedInUser, onSetting
                                     <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
                                 </label>
                            </div>
-                           {loggedInUser.role === UserRole.Representative && (
+                           {isRepresentative && (
                             <div className="flex items-center justify-between py-4">
                                 <div>
                                     <p className="font-semibold text-slate-800 dark:text-slate-200">Alertas de Vendas (E-mail)</p>

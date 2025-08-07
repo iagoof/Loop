@@ -86,7 +86,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo de Conta</label>
               <div className="flex space-x-2 rounded-lg bg-slate-100 dark:bg-slate-900 p-1">
                   <button onClick={() => setRole(UserRole.Client)} className={`w-full text-center font-semibold text-sm p-2 rounded-md transition-colors ${role === UserRole.Client ? 'bg-white text-orange-600 shadow-sm dark:bg-slate-700 dark:text-orange-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'}`}>Sou Cliente</button>
-                  <button onClick={() => setRole(UserRole.Representative)} className={`w-full text-center font-semibold text-sm p-2 rounded-md transition-colors ${role === UserRole.Representative ? 'bg-white text-orange-600 shadow-sm dark:bg-slate-700 dark:text-orange-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'}`}>Sou Representante</button>
+                  <button onClick={() => setRole(UserRole.Vendedor)} className={`w-full text-center font-semibold text-sm p-2 rounded-md transition-colors ${role === UserRole.Vendedor ? 'bg-white text-orange-600 shadow-sm dark:bg-slate-700 dark:text-orange-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'}`}>Sou Vendedor</button>
+                  <button onClick={() => setRole(UserRole.Supervisor)} className={`w-full text-center font-semibold text-sm p-2 rounded-md transition-colors ${role === UserRole.Supervisor ? 'bg-white text-orange-600 shadow-sm dark:bg-slate-700 dark:text-orange-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'}`}>Sou Supervisor</button>
               </div>
           </div>
           

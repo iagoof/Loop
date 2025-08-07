@@ -17,7 +17,7 @@ import AdminClientsScreen from './components/AdminClientsScreen';
 import PlansScreen from './components/PlansScreen';
 import ContractsScreen from './components/ContractsScreen';
 import CommissionsScreen from './components/CommissionsScreen';
-import { RepDashboardScreen } from './components/RepDashboardScreen';
+import PersonalDashboardScreen from './components/PersonalDashboardScreen';
 import ClientsScreen from './components/ClientsScreen';
 import GoalsScreen from './components/GoalsScreen';
 import { StatementScreen } from './components/StatementScreen';
@@ -33,6 +33,9 @@ import Header from './components/Header';
 import NotificationsPanel from './components/NotificationsPanel';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import Toast from './components/Toast';
+import GamificationScreen from './components/GamificationScreen';
+import SupervisorDashboardScreen from './components/SupervisorDashboardScreen';
+import MyTeamScreen from './components/MyTeamScreen';
 
 type ActiveScreen = string | { screen: string, params: any };
 
@@ -164,7 +167,8 @@ const AppContent: React.FC = () => {
     function getDefaultScreen(role: UserRole): string {
         switch (role) {
             case UserRole.Admin: return 'admin_dashboard';
-            case UserRole.Representative: return 'rep_dashboard';
+            case UserRole.Supervisor: return 'supervisor_dashboard';
+            case UserRole.Vendedor: return 'personal_dashboard';
             case UserRole.Client: return 'client_dashboard';
             default: return 'login';
         }
@@ -180,10 +184,13 @@ const AppContent: React.FC = () => {
         contract_template: 'Modelo de Contrato',
         reports: 'Relatórios Estratégicos com IA',
         whatsapp_bot: 'WhatsApp Bot',
-        rep_dashboard: 'Meu Dashboard',
+        personal_dashboard: 'Meu Dashboard Pessoal',
+        supervisor_dashboard: 'Dashboard da Equipe',
+        my_team: 'Minha Equipe',
         clients: 'Clientes',
         sales: 'Vendas',
         goals: 'Metas',
+        gamification: 'Gamificação & Ranking',
         client_dashboard: 'Meu Painel',
         statement: 'Extrato Detalhado',
         documents: 'Meus Documentos',
@@ -215,11 +222,14 @@ const AppContent: React.FC = () => {
         reports: <StrategicReports />,
         whatsapp_bot: <WhatsAppBotScreen />,
 
-        // Telas de Representante (passando o usuário logado para filtrar dados)
-        rep_dashboard: loggedInUser && <RepDashboardScreen loggedInUser={loggedInUser} />,
+        // Telas de Representante (Vendedor e Supervisor)
+        personal_dashboard: loggedInUser && <PersonalDashboardScreen loggedInUser={loggedInUser} />,
+        supervisor_dashboard: <SupervisorDashboardScreen />,
+        my_team: <MyTeamScreen />,
         clients: loggedInUser && <ClientsScreen loggedInUser={loggedInUser} />,
         sales: loggedInUser && <SalesScreen loggedInUser={loggedInUser} />,
         goals: loggedInUser && <GoalsScreen loggedInUser={loggedInUser} />,
+        gamification: loggedInUser && <GamificationScreen loggedInUser={loggedInUser} />,
 
         // Telas de Cliente (passando o usuário logado para filtrar dados)
         client_dashboard: loggedInUser && <ClientDashboard loggedInUser={loggedInUser} />,

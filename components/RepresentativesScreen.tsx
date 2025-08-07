@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { PlusCircleIcon, Edit2Icon, UserCheckIcon, UserXIcon, TargetIconAction, DownloadIcon, Trash2Icon, ArrowUpDown } from './icons';
-import { Representative } from '../types';
+import { Representative, User, UserRole } from '../types';
 import * as db from '../services/database';
 import NewRepModal from './NewRepModal';
 import SetGoalModal from './SetGoalModal';
@@ -23,11 +23,12 @@ const statusColors = {
 
 const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
-type SortKey = keyof Representative | 'sales';
+type SortKey = keyof Representative | 'sales' | 'role' | 'points';
 type SortOrder = 'asc' | 'desc';
 
 const RepresentativesScreen: React.FC = () => {
   const [reps, setReps] = useState<Representative[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRep, setEditingRep] = useState<Representative | null>(null);
@@ -44,6 +45,7 @@ const RepresentativesScreen: React.FC = () => {
   // Função para buscar e atualizar a lista de representantes
   const fetchReps = () => {
     setReps(db.getRepresentatives());
+    setUsers(db.getUsers());
   };
 
   useEffect(() => {
@@ -73,7 +75,7 @@ const RepresentativesScreen: React.FC = () => {
   };
 
   // Salva um representante (novo ou editado)
-  const handleSaveRep = (repData: Omit<Representative, 'id' | 'sales' | 'status' | 'goal'>, id?: number) => {
+  const handleSaveRep = (repData: Omit<Representative, 'id' | 'sales' | 'status' | 'goal' | 'points' | 'badges' | 'level'>, id?: number) => {
     if (id) {
         db.updateRepresentative(id, repData);
         addToast('Representante atualizado com sucesso!', 'success');
@@ -116,22 +118,30 @@ const RepresentativesScreen: React.FC = () => {
       setSortOrder('asc');
     }
   };
+  
+  const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+  const repMap = useMemo(() => new Map(reps.map(r => [r.id, r.name])), [reps]);
 
   const sortedAndFilteredReps = useMemo(() => {
     return reps
+      .map(rep => ({
+          ...rep,
+          role: userMap.get(rep.userId!)?.role,
+          supervisorName: rep.supervisorId ? repMap.get(rep.supervisorId) : ''
+      }))
       .filter(rep =>
         rep.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rep.email.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
-        const valA = a[sortKey as keyof Representative] ?? 0;
-        const valB = b[sortKey as keyof Representative] ?? 0;
+        const valA = a[sortKey as keyof typeof a] ?? 0;
+        const valB = b[sortKey as keyof typeof b] ?? 0;
 
         if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
         if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
         return 0;
       });
-  }, [reps, searchTerm, sortKey, sortOrder]);
+  }, [reps, users, searchTerm, sortKey, sortOrder, userMap, repMap]);
 
   const totalPages = Math.ceil(sortedAndFilteredReps.length / ITEMS_PER_PAGE);
   const paginatedReps = sortedAndFilteredReps.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -148,6 +158,7 @@ const RepresentativesScreen: React.FC = () => {
         commissionRate: 'Comissão (%)',
         goal: 'Meta de Vendas (R$)',
         status: 'Status',
+        points: 'Pontos',
     };
 
     const dataToExport = sortedAndFilteredReps.map(r => ({
@@ -174,7 +185,7 @@ const RepresentativesScreen: React.FC = () => {
       <div className="p-4 md:p-6">
         <ContentHeader 
           title="Gestão de Representantes"
-          subtitle="Adicione, edite e gerencie seus representantes."
+          subtitle="Adicione, edite e gerencie seus vendedores e supervisores."
         >
           <button
             onClick={handleExport}
@@ -208,9 +219,9 @@ const RepresentativesScreen: React.FC = () => {
               <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-700/50">
                 <tr>
                   <SortableHeader headerKey="name" title="Nome" />
-                  <SortableHeader headerKey="sales" title="Vendas (30d)" />
-                  <SortableHeader headerKey="commissionRate" title="Comissão (%)" />
-                  <SortableHeader headerKey="goal" title="Meta de Vendas" />
+                  <SortableHeader headerKey="role" title="Cargo" />
+                  <th scope="col" className="px-6 py-3">Supervisor</th>
+                  <SortableHeader headerKey="points" title="Pontos" />
                   <SortableHeader headerKey="status" title="Status" />
                   <th scope="col" className="px-6 py-3"><span className="sr-only">Ações</span></th>
                 </tr>
@@ -222,9 +233,9 @@ const RepresentativesScreen: React.FC = () => {
                       <div>{rep.name}</div>
                       <div className="text-xs text-slate-500 dark:text-slate-400">{rep.email}</div>
                     </td>
-                    <td className="px-6 py-4">{rep.sales}</td>
-                    <td className="px-6 py-4">{rep.commissionRate}%</td>
-                    <td className="px-6 py-4">{rep.goal ? formatCurrency(rep.goal) : 'Não definida'}</td>
+                    <td className="px-6 py-4 font-semibold">{rep.role === UserRole.Supervisor ? 'Supervisor' : 'Vendedor'}</td>
+                    <td className="px-6 py-4">{rep.supervisorName || '-'}</td>
+                    <td className="px-6 py-4 font-semibold text-orange-600">{rep.points.toLocaleString('pt-BR')}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[rep.status]}`}>
                         {rep.status}
@@ -266,6 +277,7 @@ const RepresentativesScreen: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSaveRep}
         initialData={editingRep}
+        allReps={reps}
       />
       {repForGoal && <SetGoalModal
         isOpen={isGoalModalOpen}

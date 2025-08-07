@@ -24,6 +24,7 @@ import {
   DownloadCloudIcon,
   MessageCircleIcon,
   FileSignatureIcon,
+  TrophyIcon,
 } from './icons';
 
 interface SidebarProps {
@@ -46,14 +47,24 @@ const navItems: Record<UserRole, NavItem[]> = {
     { label: 'Contratos', icon: <FileCheck2Icon />, screen: 'contracts' },
     { label: 'Comissões', icon: <PercentIcon />, screen: 'commissions' },
     { label: 'Modelo Contrato', icon: <FileSignatureIcon />, screen: 'contract_template' },
+    { label: 'Gamificação', icon: <TrophyIcon />, screen: 'gamification' },
     { label: 'Relatórios IA', icon: <ReportsIcon />, screen: 'reports' },
     { label: 'WhatsApp Bot', icon: <MessageCircleIcon />, screen: 'whatsapp_bot' },
   ],
-  [UserRole.Representative]: [
-    { label: 'Dashboard', icon: <DashboardIcon />, screen: 'rep_dashboard' },
+  [UserRole.Supervisor]: [
+    { label: 'Dashboard Pessoal', icon: <DashboardIcon />, screen: 'personal_dashboard' },
+    { label: 'Dashboard Equipe', icon: <ReportsIcon />, screen: 'supervisor_dashboard' },
+    { label: 'Minha Equipe', icon: <ClientsIcon />, screen: 'my_team' },
+    { label: 'Vendas Pessoais', icon: <SalesIcon />, screen: 'sales' },
+    { label: 'Metas', icon: <GoalsIcon />, screen: 'goals' },
+    { label: 'Gamificação', icon: <TrophyIcon />, screen: 'gamification' },
+  ],
+  [UserRole.Vendedor]: [
+    { label: 'Dashboard', icon: <DashboardIcon />, screen: 'personal_dashboard' },
     { label: 'Clientes', icon: <ClientsIcon />, screen: 'clients' },
     { label: 'Vendas', icon: <SalesIcon />, screen: 'sales' },
     { label: 'Metas', icon: <GoalsIcon />, screen: 'goals' },
+    { label: 'Gamificação', icon: <TrophyIcon />, screen: 'gamification' },
   ],
   [UserRole.Client]: [
     { label: 'Dashboard', icon: <DashboardIcon />, screen: 'client_dashboard' },
@@ -67,7 +78,7 @@ const navItems: Record<UserRole, NavItem[]> = {
  * Conteúdo interno da Sidebar, reutilizado nas versões desktop e mobile.
  */
 const SidebarContent: React.FC<Omit<SidebarProps, 'isMobile' | 'isOpen' | 'setIsOpen'>> = ({ userRole, activeScreen, setActiveScreen, onLogout }) => {
-  const currentNavItems = navItems[userRole];
+  const currentNavItems = navItems[userRole] || [];
 
   return (
     <>

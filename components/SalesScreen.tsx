@@ -92,7 +92,7 @@ const SalesScreen: React.FC<{ loggedInUser: User }> = ({ loggedInUser }) => {
      setClients(allClients);
 
      // Filtra as vendas para mostrar apenas as do representante logado
-     if (loggedInUser.role === UserRole.Representative) {
+     if (loggedInUser.role === UserRole.Vendedor || loggedInUser.role === UserRole.Supervisor) {
         const repProfile = db.getRepresentativeByUserId(loggedInUser.id);
         if(repProfile) {
             setCurrentRep(repProfile);
